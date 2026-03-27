@@ -188,8 +188,6 @@ function LoadingState({ statuses, phaseCopy }: { statuses: string[]; phaseCopy: 
 
 type Gender = 'men' | 'women' | null
 
-const useKosmos = process.env.NEXT_PUBLIC_SHOW_NEW_FEATURE === 'true'
-
 export default function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category: categorySlug } = use(params)
   const config = getCategoryConfig(categorySlug)
@@ -368,14 +366,13 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
         style={{ animation: 'fadeUp 0.7s 0.1s ease both' }}
       >
         <div className="flex items-center gap-2.5 mb-4">
-          {!useKosmos && <span className="block w-6 h-px" style={{ background: 'var(--accent)' }} />}
           <span className="text-[10px] font-semibold tracking-[0.25em] uppercase" style={{ color: 'var(--accent)' }}>
             {config.heroSubline}
           </span>
         </div>
 
         <h1 className="font-sans font-bold leading-[1.1] mb-10 max-w-[640px] text-[#1a1a1a]"
-            style={{ fontSize: useKosmos ? 'clamp(24px, 4vw, 40px)' : 'clamp(28px, 5vw, 48px)' }}>
+            style={{ fontSize: 'clamp(24px, 4vw, 40px)' }}>
           {config.heroHeadline}
         </h1>
 
@@ -383,10 +380,7 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
           onSubmit={handleSubmit}
           className={`flex w-full bg-white border overflow-hidden transition-all duration-200
                       focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.1)]
-                      ${useKosmos
-                        ? 'border-black/[0.2] rounded-[10px] focus-within:border-[#1768B0]'
-                        : 'border-black/[0.08] rounded-[8px] focus-within:border-[#1768B0]'
-                      }`}
+                      border-black/[0.2] rounded-[10px] focus-within:border-[#1768B0]`}
         >
           <input
             value={query}
@@ -426,33 +420,17 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
             </>
           )}
 
-          {useKosmos ? (
-            <button
-              type="submit"
-              disabled={loading}
-              className="shrink-0 px-7 text-white flex items-center justify-center
-                         border-none cursor-pointer transition-all
-                         hover:brightness-90 active:scale-[0.98]
-                         disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: '#1768B0' }}
-            >
-              <i className={`fa-solid fa-wand-magic-sparkles text-[15px]${loading ? ' animate-search-rock' : ''}`} />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={loading}
-              className="shrink-0 px-7 py-[18px] text-sm font-semibold
-                         text-white border-none cursor-pointer transition-all
-                         hover:brightness-90 active:scale-[0.98]
-                         disabled:opacity-50 disabled:cursor-not-allowed
-                         flex items-center gap-2"
-              style={{ background: 'var(--accent)' }}
-            >
-              <i className={`fa-solid fa-wand-magic-sparkles${loading ? ' animate-search-rock' : ''}`} />
-              <span className="hidden sm:inline">Search</span>
-            </button>
-          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="shrink-0 px-7 text-white flex items-center justify-center
+                       border-none cursor-pointer transition-all
+                       hover:brightness-90 active:scale-[0.98]
+                       disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: '#1768B0' }}
+          >
+            <i className={`fa-solid fa-wand-magic-sparkles text-[15px]${loading ? ' animate-search-rock' : ''}`} />
+          </button>
         </form>
 
         {/* Gender toggle — mobile, outfits only */}
@@ -489,11 +467,8 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
                   key={tile.label}
                   type="button"
                   onClick={() => runSearch(tile.query)}
-                  className={`flex-shrink-0 px-4 py-2 bg-white transition-all duration-150 cursor-pointer active:scale-[0.98]
-                             ${useKosmos
-                               ? 'border border-[#1768B0] rounded-full text-sm font-normal text-[#1768B0] hover:bg-[#1768B0] hover:text-white'
-                               : 'border border-black/[0.08] rounded-full text-sm font-light text-[#1a1a1a] hover:border-[#1768B0] hover:text-[#1768B0]'
-                             }`}
+                  className="flex-shrink-0 px-4 py-2 bg-white transition-all duration-150 cursor-pointer active:scale-[0.98]
+                             border border-[#1768B0] rounded-full text-sm font-normal text-[#1768B0] hover:bg-[#1768B0] hover:text-white"
                 >
                   {tile.label}
                 </button>

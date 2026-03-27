@@ -1,9 +1,7 @@
 /*
  * Kosmos design token overrides
  *
- * Enable by setting NEXT_PUBLIC_SHOW_NEW_FEATURE=true in .env.local
- * This adds data-theme="kosmos" to <html>, activating the overrides below.
- *
+ * Applied via data-theme="kosmos" on <html>.
  * Token values sourced from the Kosmos MUI theme bundle (main.f5a2625c.iframe.bundle.js).
  * Kosmos uses a JS theme object rather than CSS custom properties — these values
  * have been mapped to the app's existing CSS variable names for a drop-in swap.

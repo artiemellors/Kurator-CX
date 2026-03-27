@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import VisualiserZone, { type VisualiserProduct } from './VisualiserZone'
 
-const useKosmos = process.env.NEXT_PUBLIC_SHOW_NEW_FEATURE === 'true'
-
 export interface Product {
   name: string
   price: string
@@ -88,7 +86,6 @@ function ItemCard({
               className="w-full h-full object-cover"
               style={{
                 animation: 'imgFadeIn 180ms ease-out, imgJiggle 350ms ease-out',
-                ...(useKosmos ? {} : { mixBlendMode: 'multiply' as const }),
               }}
             />
           ) : null}
@@ -280,7 +277,7 @@ export default function OutfitResults({
     <div id="OutfitResults" className="max-w-4xl mx-auto px-4 sm:px-8 pb-16" style={{ animation: 'fadeUp 0.5s ease both' }}>
       {/* OutfitResults — sticky outfit tab bar */}
       <div id="OutfitResults-tabbar" className={`sticky top-20 z-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-5 mb-6
-        ${useKosmos ? 'bg-white' : 'bg-[--bg]'}`}>
+        bg-white`}>
         <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-black/[0.08]">
           {outfits.map((outfit, i) => (
             <button
@@ -289,7 +286,7 @@ export default function OutfitResults({
               className={`px-5 pb-3 pt-1 text-[11px] tracking-[0.12em]
                           uppercase transition-all duration-200 whitespace-nowrap shrink-0 border-b-2
                           ${i === activeIdx
-                            ? `font-semibold ${useKosmos ? 'border-[#1768B0] text-[#1768B0]' : 'border-[--accent] text-[--accent]'}`
+                            ? `font-semibold border-[#1768B0] text-[#1768B0]`
                             : 'font-normal border-transparent text-black/30 hover:text-black/50'
                           }`}
             >

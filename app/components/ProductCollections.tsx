@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 
-const useKosmos = process.env.NEXT_PUBLIC_SHOW_NEW_FEATURE === 'true'
-
 interface CollectionProduct {
   name: string
   price: string
@@ -19,25 +17,13 @@ export interface ProductCollection {
 }
 
 function SkeletonCard() {
-  if (useKosmos) {
-    return (
-      <div className="flex flex-col">
-        <div className="skeleton aspect-[4/5] w-full rounded-[8px] bg-[#F4F5F6]" />
-        <div className="pt-2 space-y-1.5">
-          <div className="skeleton h-3 w-full rounded" />
-          <div className="skeleton h-3 w-2/3 rounded" />
-          <div className="skeleton h-4 w-1/3 rounded mt-1" />
-        </div>
-      </div>
-    )
-  }
   return (
-    <div className="bg-white border border-black/[0.08] rounded overflow-hidden">
-      <div className="skeleton aspect-[4/5] w-full" />
-      <div className="p-3 space-y-2">
+    <div className="flex flex-col">
+      <div className="skeleton aspect-[4/5] w-full rounded-[8px] bg-[#F4F5F6]" />
+      <div className="pt-2 space-y-1.5">
         <div className="skeleton h-3 w-full rounded" />
         <div className="skeleton h-3 w-2/3 rounded" />
-        <div className="skeleton h-3 w-1/3 rounded mt-1" />
+        <div className="skeleton h-4 w-1/3 rounded mt-1" />
       </div>
     </div>
   )
@@ -123,11 +109,7 @@ export function ProductCollections({ collections }: { collections: ProductCollec
     <div id="ProductCollections" className="max-w-4xl mx-auto px-4 sm:px-8 pb-16">
 
       {/* Section heading */}
-      {useKosmos ? (
-        <p className="text-2xl font-bold text-[#1a1a1a] mt-8 mb-5">Shop the edit</p>
-      ) : (
-        <p className="text-xs font-bold tracking-[0.2em] uppercase text-[--text-muted] mt-8 mb-5">Shop the Edit</p>
-      )}
+      <p className="text-2xl font-bold text-[#1a1a1a] mt-8 mb-5">Shop the edit</p>
 
       {/* ProductCollections — sticky collection tab bar */}
       <div id="ProductCollections-tabbar" className="sticky top-20 z-10 bg-white -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 mb-6">
@@ -146,7 +128,7 @@ export function ProductCollections({ collections }: { collections: ProductCollec
                 className={`px-5 pb-3 pt-1 text-[11px] tracking-[0.12em]
                             uppercase transition-all duration-200 whitespace-nowrap shrink-0 border-b-2
                             ${i === activeTab
-                              ? `font-semibold ${useKosmos ? 'border-[#1768B0] text-[#1768B0]' : 'border-[--accent] text-[--accent]'}`
+                              ? `font-semibold border-[#1768B0] text-[#1768B0]`
                               : 'font-normal border-transparent text-black/30 hover:text-black/50'
                             }`}
               >
@@ -160,54 +142,17 @@ export function ProductCollections({ collections }: { collections: ProductCollec
       {/* ProductCollections — product grid */}
       <div
         id="ProductCollections-grid"
-        className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${useKosmos ? 'gap-x-3 gap-y-6' : 'gap-3'}`}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-6"
       >
         {isLoading ? (
           Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
         ) : activeCollection ? (
           activeCollection.products.map((p, i) => (
-            useKosmos ? (
-              /* Kmart-style card: borderless, grey image area */
-              <KmartProductCard
-                key={`${activeTab}-${i}`}
-                p={p}
-                animDelay={i * 35}
-              />
-            ) : (
-              /* Original card */
-              <a
-                key={`${activeTab}-${i}`}
-                href={p.productUrl ?? '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                id="ProductCard"
-                className="bg-white rounded-lg overflow-hidden flex flex-col transition-colors"
-                style={{ animation: `fadeUp 300ms ${i * 35}ms ease both` }}
-              >
-                <div className="relative bg-white rounded-lg">
-                  {p.imageUrl ? (
-                    <img
-                      src={p.imageUrl}
-                      alt={p.name}
-                      className="aspect-[4/5] w-full object-contain rounded-lg"
-                      style={{ animation: `imgFadeIn 180ms ease-out, imgJiggle 350ms ease-out`, mixBlendMode: 'multiply' }}
-                    />
-                  ) : (
-                    <div className="aspect-[4/5] w-full bg-[--surface2] rounded-lg" />
-                  )}
-                </div>
-                <div id="ProductCard-content" className="p-3 flex flex-col flex-1">
-                  <p className="text-[14px] font-normal leading-tight line-clamp-2 text-[--text] mb-3">
-                    {p.name}
-                  </p>
-                  <p className="text-xl font-bold text-[--text] leading-none mb-3">
-                    <span className="text-xs font-bold align-top">$</span>
-                    {p.price.startsWith('$') ? p.price.slice(1) : p.price}
-                  </p>
-                  <p className="text-[11px] font-semibold mt-auto" style={{ color: 'var(--accent)' }}>View at Kmart ↗</p>
-                </div>
-              </a>
-            )
+            <KmartProductCard
+              key={`${activeTab}-${i}`}
+              p={p}
+              animDelay={i * 35}
+            />
           ))
         ) : null}
       </div>
