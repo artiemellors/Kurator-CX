@@ -69,25 +69,25 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
           - Sized so 3 circles fit exactly: mobile 122px/-ml-8, desktop 150px/-ml-10
           - overflow-x-auto kicks in when a 4th circle pushes past the right padding
       */}
-      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
-        <div className="h-full flex items-center px-5 min-w-max">
+      <div className="flex-1 min-h-0 overflow-x-auto scrollbar-hide">
+        <div className="h-full flex items-center px-5 py-3 min-w-max">
           {images.map((p, i) => (
+            // Outer wrapper: handles scale + negative margin — no overflow-hidden so scale isn't clipped
             <div
               key={`${activeIdx}-${i}`}
-              className={`relative
-                         h-[122px] w-[122px] sm:h-[150px] sm:w-[150px]
-                         rounded-[100px] shrink-0 overflow-hidden bg-[#F4F5F6]
-                         transition-transform hover:scale-105 hover:z-10
+              className={`shrink-0 transition-transform hover:scale-105 hover:z-10
                          ${i > 0 ? '-ml-8 sm:-ml-10' : ''}`}
               style={{ animation: `fadeUp 250ms ${i * 40}ms ease both` }}
             >
-              <img
-                src={p.imageUrl}
-                alt={p.name}
-                className="absolute inset-0 w-full h-full object-cover object-top"
-              />
-              {/* 1px inner border — absolute overlay so it's not clipped by overflow-hidden */}
-              <div className="absolute inset-0 rounded-[100px] border border-black/[0.15] pointer-events-none" />
+              {/* Inner div: clips image to circle — overflow-hidden only here */}
+              <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] rounded-[100px] overflow-hidden bg-[#F4F5F6]">
+                <img
+                  src={p.imageUrl}
+                  alt={p.name}
+                  className="absolute inset-0 w-full h-full object-cover object-top"
+                />
+                <div className="absolute inset-0 rounded-[100px] border border-black/[0.15] pointer-events-none" />
+              </div>
             </div>
           ))}
         </div>
