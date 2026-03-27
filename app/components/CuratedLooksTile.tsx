@@ -26,27 +26,21 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
     .filter((p): p is NonNullable<typeof p> => !!p?.imageUrl)
 
   return (
+    // overflow-hidden clips circles at the card's rounded right edge
     <div
       className="col-span-2 bg-white rounded-[12px] border border-black/[0.06]
-                 flex flex-col gap-5 p-5"
+                 flex flex-col gap-5 pt-5 pb-5 overflow-hidden"
       style={{ animation: 'fadeUp 0.5s ease both' }}
     >
-      {/* Header */}
-      <div className="flex items-end justify-between shrink-0">
+      {/* Title */}
+      <div className="px-5 shrink-0">
         <h2 className="font-bold text-[20px] leading-[1.35] text-black tracking-[0.07px]">
           Curated looks
         </h2>
-        <button
-          onClick={onExplore}
-          className="text-[#1768b0] text-[11px] font-bold tracking-[1.98px] uppercase whitespace-nowrap
-                     hover:text-[#0d4d7f] transition-colors leading-none pb-0.5"
-        >
-          Explore more →
-        </button>
       </div>
 
       {/* Tabs */}
-      <div className="relative shrink-0">
+      <div className="px-5 relative shrink-0">
         <div ref={tabsRef} className="flex overflow-x-auto scrollbar-hide">
           {outfits.map((outfit, i) => (
             <button
@@ -67,17 +61,18 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
             </button>
           ))}
         </div>
+        {/* Full-width tab underline extends to card edges */}
         <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
       </div>
 
-      {/* Gallery — flex-1 so it fills remaining card height, circles centered */}
-      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide -mx-5">
-        <div className="h-full flex items-center px-5 min-w-max">
+      {/* Gallery — pl-5 aligns circles with tabs, no right padding so last circle bleeds to card edge */}
+      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
+        <div className="h-full flex items-center pl-5 min-w-max">
           {images.map((p, i) => (
             <div
               key={`${activeIdx}-${i}`}
-              className={`relative h-[140px] w-[140px] rounded-[100px] shrink-0 overflow-hidden bg-[#F4F5F6]
-                         transition-transform hover:scale-105 hover:z-10 ${i > 0 ? '-ml-10' : ''}`}
+              className={`relative h-[160px] w-[160px] rounded-[100px] shrink-0 overflow-hidden bg-[#F4F5F6]
+                         transition-transform hover:scale-105 hover:z-10 ${i > 0 ? '-ml-11' : ''}`}
               style={{ animation: `fadeUp 250ms ${i * 40}ms ease both` }}
             >
               <img
@@ -89,6 +84,18 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Secondary CTA button */}
+      <div className="px-5 shrink-0">
+        <button
+          onClick={onExplore}
+          className="w-full py-3.5 rounded-full border border-[#1768b0] text-[#1768b0]
+                     text-[15px] font-semibold transition-all duration-200
+                     hover:bg-[#1768b0] hover:text-white"
+        >
+          Explore the look
+        </button>
       </div>
     </div>
   )
