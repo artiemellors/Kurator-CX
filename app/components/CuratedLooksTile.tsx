@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Outfit } from './OutfitResults'
 
 interface Props {
@@ -10,15 +10,34 @@ interface Props {
 
 export default function CuratedLooksTile({ outfits, onExplore }: Props) {
   const [activeIdx, setActiveIdx] = useState(0)
+  const tabsRef = useRef<HTMLDivElement>(null)
   const activeOutfit = outfits[activeIdx]
 
-  const images = activeOutfit.items
-    .map(item => item.alternatives[0])
-    .filter((p): p is NonNullable<typeof p> => !!p?.imageUrl)
+  // Scroll active tab into view when switching
+  useEffect(() => {
+    const container = tabsRef.current
+    if (!container) return
+    const tab = container.children[activeIdx] as HTMLElement | undefined
+    tab?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' })
+  }, [activeIdx])
+
+  // Build gallery by cycling through slot alternatives:
+  // alt0: Top, Bottom, Shoes → alt1: Top, Bottom, Shoes → …
+  // Gives 6+ images for a 3-slot outfit instead of just 3.
+  const MAX_IMAGES = 8
+  const images: { imageUrl: string; name: string }[] = []
+  const maxAlts = Math.max(...activeOutfit.items.map(item => item.alternatives.length))
+  outer: for (let altIdx = 0; altIdx < maxAlts; altIdx++) {
+    for (const item of activeOutfit.items) {
+      const alt = item.alternatives[altIdx]
+      if (alt?.imageUrl) images.push({ imageUrl: alt.imageUrl, name: alt.name })
+      if (images.length >= MAX_IMAGES) break outer
+    }
+  }
 
   return (
     <div
-      className="col-span-2 bg-white rounded-[12px] border border-black/[0.06] flex flex-col gap-6 pt-3 pb-4 px-3"
+      className="col-span-2 self-start bg-white rounded-[12px] border border-black/[0.06] flex flex-col gap-6 pt-3 pb-4 px-3"
       style={{ animation: 'fadeUp 0.5s ease both' }}
     >
       {/* Header: title + explore link */}
@@ -37,7 +56,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
 
       {/* Tab navigation */}
       <div className="relative">
-        <div className="flex overflow-x-auto scrollbar-hide">
+        <div ref={tabsRef} className="flex overflow-x-auto scrollbar-hide">
           {outfits.map((outfit, i) => (
             <button
               key={i}
@@ -59,7 +78,6 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
             </button>
           ))}
         </div>
-        {/* Full-width bottom border behind tabs */}
         <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
       </div>
 
@@ -71,14 +89,13 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
               key={`${activeIdx}-${i}`}
               className={`relative h-[110px] w-[107px] rounded-[100px] shrink-0 overflow-hidden bg-[#F4F5F6]
                          transition-transform hover:scale-105 hover:z-10 ${i > 0 ? '-ml-8' : ''}`}
-              style={{ animation: `fadeUp 250ms ${i * 60}ms ease both` }}
+              style={{ animation: `fadeUp 250ms ${i * 40}ms ease both` }}
             >
               <img
                 src={p.imageUrl}
                 alt={p.name}
                 className="absolute inset-0 w-full h-full object-cover object-top"
               />
-              {/* Subtle ring to separate overlapping circles */}
               <div className="absolute inset-[-1px] rounded-[101px] border border-[rgba(227,229,232,0.6)] pointer-events-none" />
             </div>
           ))}
