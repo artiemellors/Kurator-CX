@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-interface CollectionProduct {
+export interface CollectionProduct {
   name: string
   price: string
   colour?: string
@@ -29,7 +29,7 @@ function SkeletonCard() {
   )
 }
 
-function KmartProductCard({ p, animDelay }: { p: CollectionProduct; animDelay: number }) {
+export function KmartProductCard({ p, animDelay }: { p: CollectionProduct; animDelay: number }) {
   const hasAlt = !!p.altImageUrl
   const [showAlt, setShowAlt] = useState(false)
 
