@@ -27,12 +27,12 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
 
   return (
     <div
-      className="col-span-2 self-start bg-white rounded-[12px] border border-black/[0.06]
+      className="col-span-2 bg-white rounded-[12px] border border-black/[0.06]
                  flex flex-col gap-5 p-5"
       style={{ animation: 'fadeUp 0.5s ease both' }}
     >
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between shrink-0">
         <h2 className="font-bold text-[20px] leading-[1.35] text-black tracking-[0.07px]">
           Curated looks
         </h2>
@@ -46,7 +46,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
       </div>
 
       {/* Tabs */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <div ref={tabsRef} className="flex overflow-x-auto scrollbar-hide">
           {outfits.map((outfit, i) => (
             <button
@@ -70,14 +70,14 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
         <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
       </div>
 
-      {/* Overlapping circles — horizontally scrollable */}
-      <div className="overflow-x-auto overflow-y-hidden -mx-5 px-5 scrollbar-hide">
-        <div className="flex items-center min-w-max py-2">
+      {/* Gallery — flex-1 so it fills remaining card height, circles centered */}
+      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide -mx-5">
+        <div className="h-full flex items-center px-5 min-w-max">
           {images.map((p, i) => (
             <div
               key={`${activeIdx}-${i}`}
-              className={`relative h-[110px] w-[107px] rounded-[100px] shrink-0 overflow-hidden bg-[#F4F5F6]
-                         transition-transform hover:scale-105 hover:z-10 ${i > 0 ? '-ml-8' : ''}`}
+              className={`relative h-[140px] w-[140px] rounded-[100px] shrink-0 overflow-hidden bg-[#F4F5F6]
+                         transition-transform hover:scale-105 hover:z-10 ${i > 0 ? '-ml-10' : ''}`}
               style={{ animation: `fadeUp 250ms ${i * 40}ms ease both` }}
             >
               <img
