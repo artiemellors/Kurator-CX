@@ -26,9 +26,9 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
     .filter((p): p is NonNullable<typeof p> => !!p?.imageUrl)
 
   return (
-    // overflow-hidden clips circles at the card's rounded right edge
+    // overflow-hidden keeps circles clipped at rounded corners
     <div
-      className="col-span-2 bg-white rounded-[12px] border border-black/[0.06]
+      className="col-span-2 bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
                  flex flex-col gap-5 pt-5 pb-5 overflow-hidden"
       style={{ animation: 'fadeUp 0.5s ease both' }}
     >
@@ -61,18 +61,25 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
             </button>
           ))}
         </div>
-        {/* Full-width tab underline extends to card edges */}
         <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
       </div>
 
-      {/* Gallery — pl-5 aligns circles with tabs, no right padding so last circle bleeds to card edge */}
+      {/* Gallery
+          - px-5 both sides so circles stay within padding (matching tab alignment)
+          - Sized so 3 circles fit exactly: mobile 122px/-ml-8, desktop 150px/-ml-10
+          - overflow-x-auto kicks in when a 4th circle pushes past the right padding
+      */}
       <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
-        <div className="h-full flex items-center pl-5 min-w-max">
+        <div className="h-full flex items-center px-5 min-w-max">
           {images.map((p, i) => (
             <div
               key={`${activeIdx}-${i}`}
-              className={`relative h-[160px] w-[160px] rounded-[100px] shrink-0 overflow-hidden bg-[#F4F5F6]
-                         transition-transform hover:scale-105 hover:z-10 ${i > 0 ? '-ml-11' : ''}`}
+              className={`relative
+                         h-[122px] w-[122px] sm:h-[150px] sm:w-[150px]
+                         rounded-[100px] shrink-0 overflow-hidden bg-[#F4F5F6]
+                         ring-1 ring-inset ring-black/[0.1]
+                         transition-transform hover:scale-105 hover:z-10
+                         ${i > 0 ? '-ml-8 sm:-ml-10' : ''}`}
               style={{ animation: `fadeUp 250ms ${i * 40}ms ease both` }}
             >
               <img
@@ -80,13 +87,12 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
                 alt={p.name}
                 className="absolute inset-0 w-full h-full object-cover object-top"
               />
-              <div className="absolute inset-[-1px] rounded-[101px] border border-[rgba(227,229,232,0.6)] pointer-events-none" />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Secondary CTA button */}
+      {/* Secondary CTA */}
       <div className="px-5 shrink-0">
         <button
           onClick={onExplore}
