@@ -3,6 +3,22 @@ import Anthropic from '@anthropic-ai/sdk'
 import { searchKmart, browseCollection, fetchCollections, Product } from '@/lib/kmart-scraper'
 import { getCategoryConfig } from '@/lib/category-config'
 
+// Retry wrapper for Anthropic API calls — 529 overloaded errors are transient
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      const isOverloaded = (err as { status?: number }).status === 529
+      if (!isOverloaded || attempt === maxAttempts) throw err
+      const delay = Math.pow(2, attempt) * 1000  // 2s, 4s, 8s
+      console.log(`[API] 529 overloaded — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
+      await new Promise(r => setTimeout(r, delay))
+    }
+  }
+  throw new Error('unreachable')
+}
+
 // Keyword-based gender filter applied at the data layer as a backstop.
 // Kmart product names reliably contain gendered terms we can check against.
 const WOMENS_TERMS = /\b(women'?s?|ladies|girl'?s?|feminine|womens)\b/i
@@ -114,14 +130,14 @@ export async function POST(req: NextRequest) {
         while (true) {
           turn++
           console.log(`\n[Claude] Turn ${turn} — calling API…`)
-          const response = await client.messages.create({
+          const response = await withRetry(() => client.messages.create({
             model: 'claude-sonnet-4-6',
             max_tokens: 8192,
             system: SYSTEM_PROMPT,
             tools,
             tool_choice: { type: 'any' },
             messages,
-          })
+          }))
           console.log(`[Claude] Turn ${turn} — stop_reason: ${response.stop_reason}, blocks: ${response.content.length}, tokens: in=${response.usage.input_tokens} out=${response.usage.output_tokens}`)
 
           // Log any reasoning/text Claude emits before tool calls
@@ -208,7 +224,7 @@ export async function POST(req: NextRequest) {
                   }))
 
                   const targetPerCollection = Math.min(20, Math.floor(unusedProducts.length / 2))
-                  const collectionsResponse = await client.messages.create({
+                  const collectionsResponse = await withRetry(() => client.messages.create({
                     model: 'claude-sonnet-4-6',
                     max_tokens: 4096,
                     system: `You are a product merchandiser for a Kmart ${config.label} finder app.
@@ -222,7 +238,7 @@ Respond ONLY with valid JSON: { "collections": [{ "name": string, "products": nu
                       role: 'user',
                       content: JSON.stringify(productList),
                     }],
-                  })
+                  }))
 
                   const text = (collectionsResponse.content[0] as Anthropic.TextBlock).text
                   console.log(`[Collections] Sonnet raw response: ${text.slice(0, 300)}`)
