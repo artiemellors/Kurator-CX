@@ -102,30 +102,38 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
       </div>
 
       {/* Gallery
-          - px-5 both sides so circles stay within padding (matching tab alignment)
-          - Sized so 3 circles fit exactly: mobile 122px/-ml-8, desktop 150px/-ml-10
-          - overflow-x-auto kicks in when a 4th circle pushes past the right padding
+          - overflow-x-auto forces overflow-y:auto (CSS coercion) — py-4 keeps bobbing
+            circles (max 7px amp) within the container so they aren't clipped
+          - 3 circles fit exactly at rest: mobile 122px/-ml-8, desktop 150px/-ml-10
+          - 4th circle makes it scrollable (overflow-x-auto)
       */}
-      <div ref={galleryRef} className="flex-1 min-h-0 overflow-x-auto scrollbar-hide">
-        <div className="h-full flex items-center px-5 py-3 min-w-max">
+      <div
+        ref={galleryRef}
+        className="flex-1 min-h-0 overflow-x-auto scrollbar-hide"
+      >
+        <div className="flex items-center px-5 py-4 min-w-max h-full">
           {images.map((p, i) => (
-            // Outermost: scroll-driven Y bob (JS-controlled via ref)
+            // Outermost: JS-controlled Y bob via ref — NO animation here (CSS animation
+            // with fill-mode:both overrides inline style.transform on the same element)
             <div
               ref={el => { circleRefs.current[i] = el }}
               key={`${activeIdx}-${i}`}
               className={`shrink-0 ${i > 0 ? '-ml-8 sm:-ml-10' : ''}`}
-              style={{ animation: `fadeUp 250ms ${i * 40}ms ease both` }}
             >
-              {/* Middle: hover scale — separate so it doesn't fight the JS transform */}
-              <div className="transition-transform hover:scale-105 hover:z-10">
-                {/* Inner div: clips image to circle — overflow-hidden only here */}
-                <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] rounded-[100px] overflow-hidden bg-[#F4F5F6]">
-                  <img
-                    src={p.imageUrl}
-                    alt={p.name}
-                    className="absolute inset-0 w-full h-full object-cover object-top"
-                  />
-                  <div className="absolute inset-0 rounded-[100px] border border-black/[0.15] pointer-events-none" />
+              {/* Animation wrapper — isolated from the ref element so fadeUp doesn't
+                  conflict with the JS-set transform on the parent */}
+              <div style={{ animation: `fadeUp 250ms ${i * 40}ms ease both` }}>
+                {/* Hover scale — separate layer so it doesn't fight the JS bob transform */}
+                <div className="transition-transform hover:scale-105 hover:z-10">
+                  {/* Circle clip — overflow-hidden lives only here */}
+                  <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] rounded-[100px] overflow-hidden bg-[#F4F5F6]">
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      className="absolute inset-0 w-full h-full object-cover object-top"
+                    />
+                    <div className="absolute inset-0 rounded-[100px] border border-black/[0.15] pointer-events-none" />
+                  </div>
                 </div>
               </div>
             </div>
