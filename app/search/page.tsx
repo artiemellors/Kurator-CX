@@ -27,7 +27,7 @@ function SkeletonCard() {
   )
 }
 
-function SkeletonTile() {
+function SkeletonTile({ statusText }: { statusText?: string }) {
   return (
     <div className="col-span-2 bg-white rounded-[16px] border border-black/[0.08] p-5 sm:p-6 flex flex-col gap-5">
       <div className="skeleton h-6 w-36 rounded" />
@@ -40,7 +40,18 @@ function SkeletonTile() {
           <div key={i} className="shrink-0 w-[68px] h-[68px] sm:w-20 sm:h-20 skeleton rounded-full" />
         ))}
       </div>
-      <div className="skeleton h-3 w-32 rounded mx-auto" />
+      {/* Progress bar in place of the CTA — contextually tied to the tile loading */}
+      <div>
+        <p className="text-[12px] text-[rgba(26,26,26,0.4)] mb-2">
+          {statusText ?? 'Curating your look…'}
+        </p>
+        <div className="relative h-px bg-black/[0.06] overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 w-1/3 bg-[var(--accent)]"
+            style={{ animation: 'progressSweep 1.8s ease-in-out infinite' }}
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -201,21 +212,6 @@ function SearchResults() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8 pb-16">
 
-        {/* Bundle loading progress — shown after products appear while Claude builds the tile */}
-        {bundleLoading && !productsLoading && (
-          <div className="mb-6" style={{ animation: 'fadeUp 0.3s ease both' }}>
-            <p className="text-sm text-[rgba(26,26,26,0.5)]">
-              {statuses[statuses.length - 1] ?? 'Curating your look…'}
-            </p>
-            <div className="relative h-px bg-black/[0.06] overflow-hidden mt-2">
-              <div
-                className="absolute inset-y-0 left-0 w-1/3 bg-[var(--accent)]"
-                style={{ animation: 'progressSweep 1.8s ease-in-out infinite' }}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Error */}
         {error && (
           <p className="text-sm text-red-600 bg-white border border-red-200 rounded px-4 py-3 mb-6">
@@ -236,7 +232,7 @@ function SearchResults() {
             if (item.type === 'tile') {
               return outfits
                 ? <CuratedLooksTile key="tile" outfits={outfits} onExplore={handleExplore} />
-                : <SkeletonTile key="tile" />
+                : <SkeletonTile key="tile" statusText={statuses[statuses.length - 1]} />
             }
             return (
               <KmartProductCard
