@@ -122,7 +122,6 @@ export async function POST(req: NextRequest) {
         ]
 
         const productMap = new Map<string, Product>()  // what Claude sees (10/search)
-        const fullPool = new Map<string, Product>()    // everything fetched (24/search)
         const messages: Anthropic.MessageParam[] = [{ role: 'user', content: query }]
         let turn = 0
         let searchIndex = 0
@@ -130,7 +129,7 @@ export async function POST(req: NextRequest) {
         while (true) {
           turn++
           console.log(`\n[Claude] Turn ${turn} — calling API…`)
-          const response = await withRetry(() => client.messages.create({
+          const response = await withRetry<Anthropic.Message>(() => client.messages.create({
             model: 'claude-sonnet-4-6',
             max_tokens: 8192,
             system: SYSTEM_PROMPT,
@@ -192,7 +191,6 @@ export async function POST(req: NextRequest) {
                 })),
               }))
 
-              // Send outfit results immediately — don't wait for collections
               send({ type: 'done', result: outfits })
 
               // Emit AI-generated refinement chips
@@ -202,86 +200,6 @@ export async function POST(req: NextRequest) {
                 : []
               if (refinements.length > 0) {
                 send({ type: 'refinements', result: refinements })
-              }
-
-              // Build collections from full pool products not used in outfits
-              const unusedProducts = [...fullPool.entries()]
-                .filter(([id]) => !usedInOutfits.has(id))
-                .map(([id, p]) => ({ id, name: p.name, price: p.price, colour: p.colour }))
-
-              console.log(`[Collections] ${unusedProducts.length} unused products in pool for collections`)
-
-              if (unusedProducts.length >= 8) {
-                send({ type: 'status', message: 'Curating collections…' })
-                try {
-                  // Pass products as a JSON array with numeric ids — same format Claude already
-                  // knows from outfit search results. Sonnet reliably echoes back the ids it's given.
-                  const productList = unusedProducts.map((p, i) => ({
-                    id: i,
-                    name: p.name,
-                    price: p.price,
-                    ...(p.colour ? { colour: p.colour } : {}),
-                  }))
-
-                  const targetPerCollection = Math.min(20, Math.floor(unusedProducts.length / 2))
-                  const collectionsResponse = await withRetry(() => client.messages.create({
-                    model: 'claude-sonnet-4-6',
-                    max_tokens: 4096,
-                    system: `You are a product merchandiser for a Kmart ${config.label} finder app.
-A user searched for: "${query}".${gender && config.showGenderFilter ? ` The user is shopping for ${gender === 'men' ? 'a man' : 'a woman'} — only include ${gender}'s products.` : ''}
-Group these products into 2–3 themed collections that complement that search.
-Give each collection a short evocative name (e.g. "Resort Ready", "Off-Duty Cool", "Weekend Edit") that feels relevant to the user's intent.
-Aim for ${targetPerCollection} products per collection. Every product should appear in exactly one collection — distribute them all.
-Each product has a numeric "id" field. Use those exact id values in your response.
-Respond ONLY with valid JSON: { "collections": [{ "name": string, "products": number[] }] }`,
-                    messages: [{
-                      role: 'user',
-                      content: JSON.stringify(productList),
-                    }],
-                  }))
-
-                  const text = (collectionsResponse.content[0] as Anthropic.TextBlock).text
-                  console.log(`[Collections] Sonnet raw response: ${text.slice(0, 300)}`)
-                  // Extract JSON by matching balanced braces (greedy regex fails when model
-                  // appends text after the closing brace that itself contains a `}`)
-                  const extractJson = (s: string): string | null => {
-                    const start = s.indexOf('{')
-                    if (start === -1) return null
-                    let depth = 0
-                    for (let i = start; i < s.length; i++) {
-                      if (s[i] === '{') depth++
-                      else if (s[i] === '}' && --depth === 0) return s.slice(start, i + 1)
-                    }
-                    return null
-                  }
-                  const jsonStr = extractJson(text)
-                  if (jsonStr) {
-                    const { collections: rawCollections } = JSON.parse(jsonStr) as {
-                      collections: Array<{ name: string; products: number[] }>
-                    }
-                    const resolvedCollections = rawCollections
-                      .map(col => ({
-                        name: col.name,
-                        products: col.products
-                          .flatMap(idx => {
-                            const entry = unusedProducts[idx]
-                            if (!entry) return []
-                            const product = fullPool.get(entry.id)
-                            return product ? [product] : []
-                          })
-                          .slice(0, 20),
-                      }))
-                      .filter(col => col.products.length >= 4)
-
-                    console.log(`[Collections] ${resolvedCollections.length} collections resolved`)
-                    if (resolvedCollections.length > 0) {
-                      send({ type: 'collections', result: resolvedCollections })
-                    }
-                  }
-                } catch (collErr) {
-                  console.error('[Collections] Failed to curate collections:', collErr)
-                  // Non-fatal — outfit results already sent
-                }
               }
 
               return
@@ -319,18 +237,11 @@ Respond ONLY with valid JSON: { "collections": [{ "name": string, "products": nu
                 send({ type: 'status', message: `No results for "${label}" — skipping` })
               }
 
-              // Tag Claude's 10 products and store in both maps
+              // Tag Claude's 10 products and register in productMap for id resolution
               const tagged = products.map((p, pi) => {
                 const id = `q${si}p${pi}`
                 productMap.set(id, p)
-                fullPool.set(id, p)
                 return { id, name: p.name, price: p.price, ...(p.colour ? { colour: p.colour } : {}) }
-              })
-
-              // Store the remaining products in fullPool only (not visible to Claude)
-              allProducts.slice(10).forEach((p, pi) => {
-                const id = `q${si}x${pi}`
-                fullPool.set(id, p)
               })
 
               return {

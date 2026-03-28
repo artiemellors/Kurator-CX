@@ -50,15 +50,16 @@ function SearchResults() {
   const router = useRouter()
   const q = searchParams.get('q') ?? ''
 
-  const [headerQuery, setHeaderQuery] = useState(q)
-  const [statuses, setStatuses] = useState<string[]>([])
-  const [outfits, setOutfits] = useState<Outfit[] | null>(null)
-  const [products, setProducts] = useState<CollectionProduct[] | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showOutfits, setShowOutfits] = useState(false)
+  const [headerQuery, setHeaderQuery]   = useState(q)
+  const [statuses, setStatuses]         = useState<string[]>([])
+  const [outfits, setOutfits]           = useState<Outfit[] | null>(null)
+  const [products, setProducts]         = useState<CollectionProduct[] | null>(null)
+  const [productsLoading, setProductsLoading] = useState(false)
+  const [bundleLoading, setBundleLoading]     = useState(false)
+  const [error, setError]               = useState<string | null>(null)
+  const [showOutfits, setShowOutfits]   = useState(false)
   const outfitsRef = useRef<HTMLDivElement>(null)
-  const abortRef = useRef<AbortController | null>(null)
+  const abortRef   = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (!q) return
@@ -67,27 +68,47 @@ function SearchResults() {
     return () => abortRef.current?.abort()
   }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function runSearch(searchQ: string) {
+  function runSearch(searchQ: string) {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
 
-    setLoading(true)
+    setProductsLoading(true)
+    setBundleLoading(true)
     setOutfits(null)
     setProducts(null)
     setStatuses([])
     setError(null)
     setShowOutfits(false)
 
+    // Fast path — direct Kmart search, no AI
+    fetch(`/api/products?q=${encodeURIComponent(searchQ)}&category=outfits`, {
+      signal: controller.signal,
+    })
+      .then(r => r.json())
+      .then(({ products: raw }: { products: CollectionProduct[] }) => {
+        setProducts(raw)
+        setProductsLoading(false)
+      })
+      .catch(err => {
+        if ((err as Error).name !== 'AbortError') setError(String(err))
+        setProductsLoading(false)
+      })
+
+    // Slow path — Claude decides what to search for and builds the outfit bundle
+    fetchBundle(searchQ, controller.signal)
+  }
+
+  async function fetchBundle(searchQ: string, signal: AbortSignal) {
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: searchQ, gender: null, category: 'outfits' }),
-        signal: controller.signal,
+        signal,
       })
 
-      const reader = res.body!.getReader()
+      const reader  = res.body!.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
 
@@ -104,24 +125,16 @@ function SearchResults() {
             setStatuses(prev => [...prev, event.message])
           } else if (event.type === 'done') {
             setOutfits(event.result)
-          } else if (event.type === 'collections') {
-            const flat: CollectionProduct[] = event.result.flatMap(
-              (c: { products: CollectionProduct[] }) => c.products
-            )
-            setProducts(flat)
-            setLoading(false)
+            setBundleLoading(false)
           } else if (event.type === 'error') {
-            setError(event.message)
-            setLoading(false)
+            setBundleLoading(false)
           }
         }
       }
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        setError(String(err))
-      }
+      if ((err as Error).name !== 'AbortError') setError(String(err))
     } finally {
-      setLoading(false)
+      setBundleLoading(false)
     }
   }
 
@@ -135,16 +148,18 @@ function SearchResults() {
     setTimeout(() => outfitsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
   }
 
-  // Build grid: products with CuratedLooksTile inserted at TILE_INSERT_POSITION
+  // Build grid: products with tile slot always reserved at TILE_INSERT_POSITION
   const insertPos = Math.min(TILE_INSERT_POSITION, products?.length ?? 0)
-  const gridItems: GridItem[] = [
-    ...(products ?? []).slice(0, insertPos).map(p => ({ type: 'product' as const, data: p })),
-    ...(outfits ? [{ type: 'tile' as const }] : []),
-    ...(products ?? []).slice(insertPos).map(p => ({ type: 'product' as const, data: p })),
-  ]
+  const gridItems: GridItem[] = products
+    ? [
+        ...products.slice(0, insertPos).map(p => ({ type: 'product' as const, data: p })),
+        { type: 'tile' as const },
+        ...products.slice(insertPos).map(p => ({ type: 'product' as const, data: p })),
+      ]
+    : []
 
-  const showSkeletons = loading && products === null
-  const showGrid = products !== null
+  const showSkeletons = productsLoading
+  const showGrid      = products !== null
 
   return (
     <div className="min-h-screen bg-[--bg]">
@@ -173,11 +188,11 @@ function SearchResults() {
               />
               <button
                 type="submit"
-                disabled={loading}
+                disabled={productsLoading}
                 className="shrink-0 px-4 text-white bg-[#1768B0] border-none cursor-pointer
                            hover:brightness-90 transition-all disabled:opacity-50"
               >
-                <i className={`fa-solid fa-wand-magic-sparkles text-[13px]${loading ? ' animate-search-rock' : ''}`} />
+                <i className={`fa-solid fa-wand-magic-sparkles text-[13px]${productsLoading ? ' animate-search-rock' : ''}`} />
               </button>
             </div>
           </form>
@@ -186,11 +201,11 @@ function SearchResults() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8 pb-16">
 
-        {/* Loading progress */}
-        {loading && (
+        {/* Bundle loading progress — shown after products appear while Claude builds the tile */}
+        {bundleLoading && !productsLoading && (
           <div className="mb-6" style={{ animation: 'fadeUp 0.3s ease both' }}>
             <p className="text-sm text-[rgba(26,26,26,0.5)]">
-              {statuses[statuses.length - 1] ?? 'Searching…'}
+              {statuses[statuses.length - 1] ?? 'Curating your look…'}
             </p>
             <div className="relative h-px bg-black/[0.06] overflow-hidden mt-2">
               <div
@@ -221,7 +236,7 @@ function SearchResults() {
             if (item.type === 'tile') {
               return outfits
                 ? <CuratedLooksTile key="tile" outfits={outfits} onExplore={handleExplore} />
-                : null
+                : <SkeletonTile key="tile" />
             }
             return (
               <KmartProductCard
