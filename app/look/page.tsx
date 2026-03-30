@@ -7,17 +7,28 @@ import { loadLookSession, type LookSession } from '@/lib/look-session'
 import { KmartProductCard, type CollectionProduct } from '@/app/components/ProductCollections'
 import type { OutfitItem } from '@/app/components/OutfitResults'
 
-/** Maps an OutfitItem's first alternative to the CollectionProduct shape KmartProductCard expects */
-function toCollectionProduct(item: OutfitItem): CollectionProduct | null {
-  const p = item.alternatives[0]
+/** Maps an OutfitItem alternative at a given index to the CollectionProduct shape */
+function toCollectionProduct(item: OutfitItem, altIdx: number): CollectionProduct | null {
+  const p = item.alternatives[altIdx]
   if (!p) return null
   return { name: p.name, price: p.price, colour: p.colour, productUrl: p.productUrl, imageUrl: p.imageUrl }
 }
 
-/** One outfit slot: category label + product card. Slice 4 will add the swap affordance here. */
+/**
+ * One outfit slot: category label + product card + swap affordance.
+ * altIdx state is local — resets automatically when the parent remounts
+ * this component (via key={outfitIdx-slotIdx}) on outfit tab switch.
+ */
 function SlotCard({ item, animDelay }: { item: OutfitItem; animDelay: number }) {
-  const product = toCollectionProduct(item)
+  const [altIdx, setAltIdx] = useState(0)
+  const hasAlts = item.alternatives.length > 1
+
+  const product = toCollectionProduct(item, altIdx)
   if (!product) return null
+
+  function cycleNext() {
+    setAltIdx(i => (i + 1) % item.alternatives.length)
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -25,7 +36,45 @@ function SlotCard({ item, animDelay }: { item: OutfitItem; animDelay: number }) 
       <p className="text-[10px] font-semibold tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)]">
         {item.category}
       </p>
-      <KmartProductCard p={product} animDelay={animDelay} />
+
+      {/* key={altIdx} replays the fadeUp animation on each swap */}
+      <KmartProductCard
+        key={altIdx}
+        p={product}
+        animDelay={altIdx === 0 ? animDelay : 0}
+      />
+
+      {/* Swap affordance — only shown when multiple alternatives exist */}
+      {hasAlts && (
+        <div className="flex items-center justify-between px-0.5 mt-0.5">
+          {/* Dot indicators — tap to jump to a specific alternative */}
+          <div className="flex items-center gap-1.5">
+            {item.alternatives.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setAltIdx(i)}
+                aria-label={`Option ${i + 1} of ${item.alternatives.length}`}
+                className={`w-[6px] h-[6px] rounded-full transition-all duration-200
+                  ${i === altIdx
+                    ? 'bg-[#1768b0]'
+                    : 'bg-black/[0.15] hover:bg-black/[0.35]'
+                  }`}
+              />
+            ))}
+          </div>
+
+          {/* Cycle button */}
+          <button
+            onClick={cycleNext}
+            className="flex items-center gap-1 text-[11px] text-[rgba(26,26,26,0.38)]
+                       hover:text-[#1768b0] transition-colors group"
+          >
+            <i className="fa-solid fa-rotate text-[10px] transition-transform duration-300
+                          group-hover:rotate-180" />
+            <span>Try others</span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
