@@ -17,7 +17,54 @@ function LookPageContent() {
   const [ready, setReady]             = useState(false)
   const [indices, setIndices]         = useState<number[]>([])
   const [refineQuery, setRefineQuery] = useState('')
-  const tabsRef = useRef<HTMLDivElement>(null)
+  const [inputFocused, setInputFocused] = useState(false)
+  const [typedText, setTypedText]     = useState('')
+  const tabsRef     = useRef<HTMLDivElement>(null)
+  const phraseIdxRef  = useRef(0)
+  const charIdxRef    = useRef(0)
+  const isDeletingRef = useRef(false)
+
+  const REFINE_PHRASES = [
+    'What would you change?',
+    "What's more your look?",
+    'What style do you like?',
+    'Too casual? Too formal?',
+    'Different colour palette?',
+    'Add a layer?',
+  ]
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+
+    function tick() {
+      const phrase = REFINE_PHRASES[phraseIdxRef.current]
+      const isDeleting = isDeletingRef.current
+
+      if (!isDeleting) {
+        charIdxRef.current++
+        setTypedText(phrase.slice(0, charIdxRef.current))
+        if (charIdxRef.current === phrase.length) {
+          isDeletingRef.current = true
+          timer = setTimeout(tick, 1800)
+          return
+        }
+        timer = setTimeout(tick, 55)
+      } else {
+        charIdxRef.current--
+        setTypedText(phrase.slice(0, charIdxRef.current))
+        if (charIdxRef.current === 0) {
+          isDeletingRef.current = false
+          phraseIdxRef.current = (phraseIdxRef.current + 1) % REFINE_PHRASES.length
+          timer = setTimeout(tick, 300)
+          return
+        }
+        timer = setTimeout(tick, 30)
+      }
+    }
+
+    timer = setTimeout(tick, 900)
+    return () => clearTimeout(timer)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const data = loadLookSession(q)
@@ -254,12 +301,11 @@ function LookPageContent() {
               ))}
             </div>
 
-            {/* ── Refinement zone ───────────────────────────────────── */}
-            <div className="border-t border-black/[0.06] pt-6 pb-8 mt-6"
-                 style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
-
-              {session.refinements.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
+            {/* ── Refinement chips (always in-flow) ─────────────────── */}
+            {session.refinements.length > 0 && (
+              <div className="border-t border-black/[0.06] pt-6 mt-6"
+                   style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
+                <div className="flex flex-wrap gap-2">
                   {session.refinements.map((chip, i) => (
                     <button key={i} onClick={() => handleRefine(chip)}
                             className="px-4 py-2 rounded-full border border-black/[0.12] bg-white
@@ -270,37 +316,55 @@ function LookPageContent() {
                     </button>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
-                <div className="flex items-center gap-3 bg-white rounded-full
-                                border border-black/[0.12]
-                                focus-within:border-[#1768b0]/50
-                                focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.06)]
-                                transition-all duration-200 px-5 py-3.5">
-                  <i className="fa-solid fa-wand-magic-sparkles text-[13px] text-black/25 shrink-0" />
-                  <input
-                    value={refineQuery}
-                    onChange={e => setRefineQuery(e.target.value)}
-                    placeholder="What would you change?"
-                    className="flex-1 min-w-0 bg-transparent outline-none text-[14px]
-                               text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!refineQuery.trim()}
-                    className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
-                               bg-[#1768b0] text-white
-                               disabled:bg-[#1768b0]/20 disabled:text-[#1768b0]/40
-                               transition-all duration-200"
-                  >
-                    <i className="fa-solid fa-arrow-up text-[12px]" />
-                  </button>
-                </div>
-              </form>
-            </div>
+            {/* Spacer so content isn't hidden behind fixed bar on mobile */}
+            <div className="h-24 lg:hidden" />
 
           </div>
+        </div>
+      </div>
+
+      {/* ── Refinement input — fixed bottom on mobile, in-flow on desktop ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-20
+                      bg-white border-t border-black/[0.06]
+                      px-4 pt-3 pb-8
+                      lg:static lg:bottom-auto lg:left-auto lg:right-auto lg:z-auto
+                      lg:bg-transparent lg:border-t-0
+                      lg:max-w-[1600px] lg:mx-auto
+                      lg:px-8 lg:pt-0 lg:pb-0"
+           style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
+        {/* On desktop we want the input inside the right column — constrain width */}
+        <div className="lg:max-w-[440px] lg:ml-auto lg:pr-0 lg:pb-8 lg:pt-6 lg:border-t lg:border-black/[0.06]">
+          <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
+            <div className="flex items-center gap-3 bg-white rounded-full
+                            border border-black/[0.12]
+                            focus-within:border-[#1768b0]/50
+                            focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.06)]
+                            transition-all duration-200 px-5 py-3.5">
+              <i className="fa-solid fa-wand-magic-sparkles text-[13px] text-black/25 shrink-0" />
+              <input
+                value={refineQuery}
+                onChange={e => setRefineQuery(e.target.value)}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                placeholder={(!inputFocused && !refineQuery) ? typedText : 'What would you change?'}
+                className="flex-1 min-w-0 bg-transparent outline-none text-[14px]
+                           text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]"
+              />
+              <button
+                type="submit"
+                disabled={!refineQuery.trim()}
+                className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                           bg-[#1768b0] text-white
+                           disabled:bg-[#1768b0]/20 disabled:text-[#1768b0]/40
+                           transition-all duration-200"
+              >
+                <i className="fa-solid fa-arrow-up text-[12px]" />
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
