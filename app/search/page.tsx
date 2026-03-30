@@ -4,8 +4,9 @@ import { Suspense, useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import CuratedLooksTile from '../components/CuratedLooksTile'
-import OutfitResults, { type Outfit } from '../components/OutfitResults'
+import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
+import { saveLookSession } from '@/lib/look-session'
 
 // Where the CuratedLooksTile is inserted in the product grid (0-indexed)
 const TILE_INSERT_POSITION = 4
@@ -61,16 +62,15 @@ function SearchResults() {
   const router = useRouter()
   const q = searchParams.get('q') ?? ''
 
-  const [headerQuery, setHeaderQuery]   = useState(q)
-  const [statuses, setStatuses]         = useState<string[]>([])
-  const [outfits, setOutfits]           = useState<Outfit[] | null>(null)
-  const [products, setProducts]         = useState<CollectionProduct[] | null>(null)
+  const [headerQuery, setHeaderQuery]         = useState(q)
+  const [statuses, setStatuses]               = useState<string[]>([])
+  const [outfits, setOutfits]                 = useState<Outfit[] | null>(null)
+  const [refinements, setRefinements]         = useState<string[]>([])
+  const [products, setProducts]               = useState<CollectionProduct[] | null>(null)
   const [productsLoading, setProductsLoading] = useState(false)
   const [bundleLoading, setBundleLoading]     = useState(false)
-  const [error, setError]               = useState<string | null>(null)
-  const [showOutfits, setShowOutfits]   = useState(false)
-  const outfitsRef = useRef<HTMLDivElement>(null)
-  const abortRef   = useRef<AbortController | null>(null)
+  const [error, setError]                     = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (!q) return
@@ -87,10 +87,10 @@ function SearchResults() {
     setProductsLoading(true)
     setBundleLoading(true)
     setOutfits(null)
+    setRefinements([])
     setProducts(null)
     setStatuses([])
     setError(null)
-    setShowOutfits(false)
 
     // Fast path — direct Kmart search, no AI
     fetch(`/api/products?q=${encodeURIComponent(searchQ)}&category=outfits`, {
@@ -113,6 +113,10 @@ function SearchResults() {
   }
 
   async function fetchBundle(searchQ: string, signal: AbortSignal) {
+    // Track outfits and refinements locally so we can write them together to sessionStorage
+    let latestOutfits: Outfit[] = []
+    let latestRefinements: string[] = []
+
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
@@ -137,8 +141,17 @@ function SearchResults() {
           if (event.type === 'status') {
             setStatuses(prev => [...prev, event.message])
           } else if (event.type === 'done') {
-            setOutfits(event.result)
+            latestOutfits = event.result
+            setOutfits(latestOutfits)
+            saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements })
             setBundleLoading(false)
+          } else if (event.type === 'refinements') {
+            latestRefinements = event.result
+            setRefinements(latestRefinements)
+            // Update session with refinements once they arrive
+            if (latestOutfits.length > 0) {
+              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements })
+            }
           } else if (event.type === 'error') {
             console.error('[Bundle] SSE error event:', event.message)
             setBundleLoading(false)
@@ -148,7 +161,6 @@ function SearchResults() {
     } catch (err) {
       if (!signal.aborted && (err as Error).name !== 'AbortError') setError(String(err))
     } finally {
-      // Guard against a stale aborted fetch overwriting a newer search's loading state
       if (!signal.aborted) setBundleLoading(false)
     }
   }
@@ -158,9 +170,8 @@ function SearchResults() {
     router.push(`/search?q=${encodeURIComponent(newQ.trim())}`)
   }
 
-  function handleExplore() {
-    setShowOutfits(true)
-    setTimeout(() => outfitsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  function handleExplore(idx: number) {
+    router.push(`/look?q=${encodeURIComponent(q)}&idx=${idx}`)
   }
 
   // Only reserve a tile slot if the bundle is loading or succeeded
@@ -174,9 +185,12 @@ function SearchResults() {
       ]
     : []
 
-  const showSkeletons  = productsLoading
-  const showGrid       = products !== null
-  const showNoResults  = !productsLoading && products !== null && products.length === 0
+  const showSkeletons = productsLoading
+  const showGrid      = products !== null
+  const showNoResults = !productsLoading && products !== null && products.length === 0
+
+  // Suppress unused warning — refinements will be used in Slice 5
+  void refinements
 
   return (
     <div className="min-h-screen bg-[--bg]">
@@ -243,7 +257,7 @@ function SearchResults() {
             if (item.type === 'tile') {
               if (outfits) return <CuratedLooksTile key="tile" outfits={outfits} onExplore={handleExplore} />
               if (bundleLoading) return <SkeletonTile key="tile" statusText={statuses[statuses.length - 1]} />
-              return null  // bundle finished but failed — don't leave a skeleton permanently
+              return null
             }
             return (
               <KmartProductCard
@@ -254,13 +268,6 @@ function SearchResults() {
             )
           })}
         </div>
-
-        {/* Full outfit results — revealed by EXPLORE THE LOOK */}
-        {showOutfits && outfits && (
-          <div ref={outfitsRef} className="mt-16 pt-8 border-t border-black/[0.08]">
-            <OutfitResults outfits={outfits} />
-          </div>
-        )}
       </main>
     </div>
   )

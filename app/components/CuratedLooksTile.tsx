@@ -5,7 +5,7 @@ import type { Outfit } from './OutfitResults'
 
 interface Props {
   outfits: Outfit[]
-  onExplore: () => void
+  onExplore: (idx: number) => void
 }
 
 // Irregular phase offsets per circle index — not regular multiples so motion feels non-uniform
@@ -144,7 +144,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
       {/* Secondary CTA */}
       <div className="px-5 shrink-0">
         <button
-          onClick={onExplore}
+          onClick={() => onExplore(activeIdx)}
           className="w-full py-3.5 rounded-full border border-[#1768b0] text-[#1768b0]
                      text-[15px] font-semibold transition-all duration-200
                      hover:bg-[#1768b0] hover:text-white"
