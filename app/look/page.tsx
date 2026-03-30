@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { loadLookSession, type LookSession } from '@/lib/look-session'
 import { ItemCard } from '@/app/components/OutfitResults'
+import { KmartProductCard, type CollectionProduct } from '@/app/components/ProductCollections'
 
 function LookPageContent() {
   const searchParams = useSearchParams()
@@ -13,12 +14,13 @@ function LookPageContent() {
   const q   = searchParams.get('q') ?? ''
   const idx = Math.max(0, parseInt(searchParams.get('idx') ?? '0', 10))
 
-  const [session, setSession]         = useState<LookSession | null>(null)
-  const [ready, setReady]             = useState(false)
-  const [indices, setIndices]         = useState<number[]>([])
-  const [refineQuery, setRefineQuery] = useState('')
+  const [session, setSession]           = useState<LookSession | null>(null)
+  const [ready, setReady]               = useState(false)
+  const [indices, setIndices]           = useState<number[]>([])
+  const [refineQuery, setRefineQuery]   = useState('')
   const [inputFocused, setInputFocused] = useState(false)
-  const [typedText, setTypedText]     = useState('')
+  const [typedText, setTypedText]       = useState('')
+  const [relatedProducts, setRelatedProducts] = useState<CollectionProduct[] | null>(null)
   const tabsRef     = useRef<HTMLDivElement>(null)
   const phraseIdxRef  = useRef(0)
   const charIdxRef    = useRef(0)
@@ -72,6 +74,15 @@ function LookPageContent() {
     setSession(data)
     setReady(true)
   }, [q, router])
+
+  useEffect(() => {
+    if (!q) return
+    setRelatedProducts(null)
+    fetch(`/api/products?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(({ products }) => setRelatedProducts(products ?? []))
+      .catch(() => setRelatedProducts([]))
+  }, [q])
 
   const activeOutfit = session?.outfits[idx] ?? session?.outfits[0]
 
@@ -326,6 +337,34 @@ function LookPageContent() {
           </div>
         </div>
       </div>
+
+      {/* ── Shop the look — full-width product grid ─────────────────────── */}
+      {(relatedProducts === null || relatedProducts.length > 0) && (
+        <div className="border-t border-black/[0.06] mt-2 pb-32 lg:pb-16">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-8">
+            <h2 className="text-[22px] sm:text-[26px] font-bold text-[#1a1a1a] mt-8 mb-6">
+              Shop the look
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6">
+              {relatedProducts === null
+                ? Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className="flex flex-col">
+                      <div className="skeleton aspect-[4/5] w-full rounded-[8px] bg-[#F4F5F6]" />
+                      <div className="pt-2 space-y-1.5">
+                        <div className="skeleton h-3 w-full rounded" />
+                        <div className="skeleton h-3 w-2/3 rounded" />
+                        <div className="skeleton h-4 w-1/3 rounded mt-1" />
+                      </div>
+                    </div>
+                  ))
+                : relatedProducts.map((p, i) => (
+                    <KmartProductCard key={i} p={p} animDelay={i * 35} />
+                  ))
+              }
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Refinement input — fixed bottom on mobile, in-flow on desktop ── */}
       <div className="fixed bottom-0 left-0 right-0 z-20
