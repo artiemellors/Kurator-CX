@@ -66,7 +66,7 @@ function LookPageContent() {
       {/* ── Nav: sticky, logo right ────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white border-b border-black/[0.06]"
               style={{ animation: 'fadeDown 0.4s ease both' }}>
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-14 flex items-center justify-end">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-14 flex items-center">
           <a href="/">
             <Image src="/Logo.svg" alt="Kmart" width={80} height={26} priority />
           </a>
