@@ -140,6 +140,7 @@ function SearchResults() {
             setOutfits(event.result)
             setBundleLoading(false)
           } else if (event.type === 'error') {
+            console.error('[Bundle] SSE error event:', event.message)
             setBundleLoading(false)
           }
         }

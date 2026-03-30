@@ -9,8 +9,12 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
     try {
       return await fn()
     } catch (err) {
-      const isOverloaded = (err as { status?: number }).status === 529
-      if (!isOverloaded || attempt === maxAttempts) throw err
+      const status = (err as { status?: number }).status
+      const isOverloaded = status === 529
+      if (!isOverloaded || attempt === maxAttempts) {
+        console.error(`[API] Error (status=${status ?? 'none'}, attempt=${attempt}):`, err)
+        throw err
+      }
       const delay = Math.pow(2, attempt) * 1000  // 2s, 4s, 8s
       console.log(`[API] 529 overloaded — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
       await new Promise(r => setTimeout(r, delay))
@@ -256,6 +260,7 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (err) {
+        console.error('[Search] Route error:', err)
         send({ type: 'error', message: String(err) })
       } finally {
         controller.close()
