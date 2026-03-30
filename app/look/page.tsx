@@ -273,12 +273,12 @@ function LookPageContent() {
               )}
 
               <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
-                <div className="flex items-center gap-3 bg-[#EAF1FA] rounded-full
-                                border border-[#1768b0]/15
-                                focus-within:border-[#1768b0]/40
-                                focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.08)]
+                <div className="flex items-center gap-3 bg-white rounded-full
+                                border border-black/[0.12]
+                                focus-within:border-[#1768b0]/50
+                                focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.06)]
                                 transition-all duration-200 px-5 py-3.5">
-                  <i className="fa-solid fa-wand-magic-sparkles text-[13px] text-[#1768b0]/50 shrink-0" />
+                  <i className="fa-solid fa-wand-magic-sparkles text-[13px] text-black/25 shrink-0" />
                   <input
                     value={refineQuery}
                     onChange={e => setRefineQuery(e.target.value)}
