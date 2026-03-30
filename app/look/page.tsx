@@ -140,6 +140,8 @@ function LookPageContent() {
     setRefineError(null)
     setRefineQuery('')
 
+    let resolved = false
+
     try {
       const res = await fetch('/api/refine', {
         method:  'POST',
@@ -168,6 +170,7 @@ function LookPageContent() {
             setRefineStatus(event.message)
 
           } else if (event.type === 'done') {
+            resolved = true
             if (!event.result) {
               setRefineError("Couldn't update the look — try again")
               setRefining(false)
@@ -196,11 +199,19 @@ function LookPageContent() {
             })
 
           } else if (event.type === 'error') {
+            resolved = true
             setRefineError("Couldn't update the look — try again")
             setRefining(false)
             setRefineStatus(null)
           }
         }
+      }
+
+      // Stream closed without a done/error event (network drop, server crash)
+      if (!resolved) {
+        setRefineError("Couldn't update the look — try again")
+        setRefining(false)
+        setRefineStatus(null)
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
@@ -508,16 +519,33 @@ function LookPageContent() {
                            text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]
                            disabled:cursor-not-allowed"
               />
-              <button
-                type="submit"
-                disabled={!refineQuery.trim() || refining}
-                className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
-                           bg-[#1768b0] text-white
-                           disabled:opacity-40
-                           transition-opacity duration-200"
-              >
-                <i className="fa-solid fa-arrow-up text-[12px]" />
-              </button>
+              {refining ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    refineAbortRef.current?.abort()
+                    setRefining(false)
+                    setRefineStatus(null)
+                  }}
+                  className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                             border border-black/[0.12] text-black/40
+                             hover:border-black/25 hover:text-black/60
+                             transition-all duration-200"
+                >
+                  <i className="fa-solid fa-xmark text-[12px]" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!refineQuery.trim()}
+                  className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                             bg-[#1768b0] text-white
+                             disabled:opacity-40
+                             transition-opacity duration-200"
+                >
+                  <i className="fa-solid fa-arrow-up text-[12px]" />
+                </button>
+              )}
             </div>
           </form>
         </div>
