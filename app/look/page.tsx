@@ -216,13 +216,7 @@ function LookPageContent() {
         </section>
 
         {/* ── Refinement zone ─────────────────────────────────────── */}
-        <section className="pt-8" style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
-
-          {/* Section label */}
-          <p className="text-[10px] font-semibold tracking-[1.2px] uppercase
-                        text-[rgba(26,26,26,0.35)] mb-4">
-            Refine this look
-          </p>
+        <section className="pt-8 pb-10" style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
 
           {/* Chips — only shown when refinements are available */}
           {session.refinements.length > 0 && (
@@ -242,34 +236,31 @@ function LookPageContent() {
             </div>
           )}
 
-          {/* Freeform stylist input */}
-          <form
-            onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}
-            className="rounded-[14px] bg-[#EAF1FA] p-4 sm:p-5 flex flex-col gap-3"
-          >
-            <p className="text-[12px] font-semibold tracking-[0.6px] uppercase text-[#1768b0]/70">
-              Ask the stylist
-            </p>
-            <div className="flex items-center gap-2 bg-white rounded-[10px] border border-[#1768b0]/20
-                            focus-within:border-[#1768b0] focus-within:shadow-[0_0_0_2px_rgba(23,104,176,0.1)]
-                            transition-all duration-200 px-4 py-3">
+          {/* Prompt input — full-width pill, tinted bg on the input itself */}
+          <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
+            <div className="flex items-center gap-3 bg-[#EAF1FA] rounded-full
+                            border border-[#1768b0]/15
+                            focus-within:border-[#1768b0]/40
+                            focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.08)]
+                            transition-all duration-200 px-5 py-3.5">
               <i className="fa-solid fa-wand-magic-sparkles text-[13px] text-[#1768b0]/50 shrink-0" />
               <input
                 value={refineQuery}
                 onChange={e => setRefineQuery(e.target.value)}
                 placeholder="What would you change?"
                 className="flex-1 min-w-0 bg-transparent outline-none text-[14px]
-                           text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.35)]"
+                           text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]"
               />
-              {refineQuery.trim() && (
-                <button
-                  type="submit"
-                  className="shrink-0 text-[13px] font-semibold text-[#1768b0]
-                             hover:text-[#1768b0]/70 transition-colors"
-                >
-                  Go
-                </button>
-              )}
+              <button
+                type="submit"
+                disabled={!refineQuery.trim()}
+                className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                           bg-[#1768b0] text-white
+                           disabled:bg-[#1768b0]/20 disabled:text-[#1768b0]/40
+                           transition-all duration-200"
+              >
+                <i className="fa-solid fa-arrow-up text-[12px]" />
+              </button>
             </div>
           </form>
 
