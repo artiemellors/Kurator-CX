@@ -126,7 +126,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
                 {/* Hover scale — separate layer so it doesn't fight the JS bob transform */}
                 <div className="transition-transform hover:scale-105 hover:z-10">
                   {/* Circle clip — overflow-hidden lives only here */}
-                  <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] rounded-[100px] overflow-hidden bg-[#F4F5F6]">
+                  <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] xl:h-[190px] xl:w-[190px] rounded-[100px] overflow-hidden bg-[#F4F5F6]">
                     <img
                       src={p.imageUrl}
                       alt={p.name}
@@ -140,6 +140,13 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Outfit description — fills vertical space on larger tiles */}
+      {activeOutfit.description && (
+        <p className="px-5 shrink-0 text-[13px] text-[rgba(26,26,26,0.5)] leading-relaxed line-clamp-3">
+          {activeOutfit.description}
+        </p>
+      )}
 
       {/* Secondary CTA */}
       <div className="px-5 shrink-0">

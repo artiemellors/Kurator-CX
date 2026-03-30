@@ -9,7 +9,7 @@ import { KmartProductCard, type CollectionProduct } from '../components/ProductC
 import { saveLookSession } from '@/lib/look-session'
 
 // Where the CuratedLooksTile is inserted in the product grid (0-indexed)
-const TILE_INSERT_POSITION = 5
+const TILE_INSERT_POSITION = 4
 
 type GridItem =
   | { type: 'product'; data: CollectionProduct }
@@ -240,10 +240,10 @@ function SearchResults() {
         )}
 
         {/* Product grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6 grid-flow-dense">
           {showSkeletons && (
             <>
-              {Array.from({ length: insertPos || 5 }).map((_, i) => <SkeletonCard key={`pre-${i}`} />)}
+              {Array.from({ length: insertPos || 4 }).map((_, i) => <SkeletonCard key={`pre-${i}`} />)}
               <SkeletonTile />
               {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={`post-${i}`} />)}
             </>
