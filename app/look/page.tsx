@@ -28,12 +28,10 @@ function LookPageContent() {
 
   const activeOutfit = session?.outfits[idx] ?? session?.outfits[0]
 
-  // Reset per-item alt indices when outfit tab changes
   useEffect(() => {
     if (activeOutfit) setIndices(activeOutfit.items.map(() => 0))
   }, [idx, activeOutfit])
 
-  // Scroll the active tab into view
   useEffect(() => {
     const container = tabsRef.current
     if (!container) return
@@ -57,16 +55,15 @@ function LookPageContent() {
     router.push(`/search?q=${encodeURIComponent(trimmed)}`)
   }
 
-  // Gallery: first item = hero, rest = strip
-  const heroItem  = activeOutfit.items[0]
-  const heroImage = heroItem?.alternatives[indices[0] ?? 0]?.imageUrl
-                 ?? heroItem?.alternatives[0]?.imageUrl
+  const heroItem   = activeOutfit.items[0]
+  const heroImage  = heroItem?.alternatives[indices[0] ?? 0]?.imageUrl
+                  ?? heroItem?.alternatives[0]?.imageUrl
   const stripItems = activeOutfit.items.slice(1)
 
   return (
     <div className="min-h-screen bg-[--bg]">
 
-      {/* ── Nav: logo right ──────────────────────────────────────── */}
+      {/* ── Nav: sticky, logo right ────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white border-b border-black/[0.06]"
               style={{ animation: 'fadeDown 0.4s ease both' }}>
         <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-14 flex items-center justify-end">
@@ -76,39 +73,49 @@ function LookPageContent() {
         </div>
       </header>
 
-      {/* ── Main: PDP 2-col on desktop, stacked on mobile ────────── */}
+      {/* ── Full-width back bar — page-level action, all breakpoints ─ */}
+      <div className="bg-white border-b border-black/[0.06]"
+           style={{ animation: 'fadeDown 0.45s ease both' }}>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-3">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-[rgba(26,26,26,0.45)]
+                       hover:text-[#1768B0] transition-colors"
+          >
+            <i className="fa-solid fa-chevron-left text-[11px]" />
+            <span className="text-[12px]">Back to results</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Main grid ────────────────────────────────────────────────── */}
       <div className="max-w-[1600px] mx-auto">
         <div className="lg:grid lg:grid-cols-[1fr_440px] lg:gap-10 lg:px-8">
 
           {/* ══ LEFT: image gallery ══════════════════════════════════ */}
-          <div className="lg:sticky lg:top-14 lg:self-start lg:py-8">
+          {/*
+            On desktop the gallery is sticky below the nav and fills the
+            remaining viewport height — so the images are never cropped by
+            dead space below. The strip moves to the LEFT of the hero.
+          */}
+          <div className="lg:sticky lg:top-14 lg:self-start
+                          lg:h-[calc(100vh-3.5rem)]">
 
-            {/* ── Desktop: hero + right vertical strip ── */}
-            <div className="hidden lg:flex gap-2"
+            {/* Desktop: strip LEFT + hero RIGHT, both fill panel height */}
+            <div className="hidden lg:flex gap-2 h-full py-8"
                  key={`gallery-${idx}`}
                  style={{ animation: 'fadeUp 0.4s ease both' }}>
-              {/* Hero */}
-              <div className="flex-[3] aspect-[4/5] rounded-xl overflow-hidden bg-[#F4F5F6]">
-                {heroImage && (
-                  <img
-                    key={`hero-${indices[0]}`}
-                    src={heroImage}
-                    alt={heroItem?.alternatives[0]?.name}
-                    className="w-full h-full object-cover"
-                    style={{ animation: 'imgFadeIn 220ms ease-out' }}
-                  />
-                )}
-              </div>
 
-              {/* Vertical strip — same height as hero via flex stretch */}
+              {/* Thumbnail strip — LEFT, proportional 4:5 images */}
               {stripItems.length > 0 && (
-                <div className="flex-1 flex flex-col gap-2">
+                <div className="flex-1 flex flex-col gap-2 min-w-0">
                   {stripItems.map((item, i) => {
                     const altIdx = indices[i + 1] ?? 0
-                    const img = item.alternatives[altIdx]?.imageUrl
-                               ?? item.alternatives[0]?.imageUrl
+                    const img    = item.alternatives[altIdx]?.imageUrl
+                                ?? item.alternatives[0]?.imageUrl
                     return (
-                      <div key={i} className="flex-1 rounded-lg overflow-hidden bg-[#F4F5F6] min-h-0">
+                      <div key={i}
+                           className="flex-1 min-h-0 rounded-lg overflow-hidden bg-[#F4F5F6]">
                         {img && (
                           <img
                             key={`strip-${i}-${altIdx}`}
@@ -123,9 +130,22 @@ function LookPageContent() {
                   })}
                 </div>
               )}
+
+              {/* Hero — RIGHT, takes remaining width */}
+              <div className="flex-[3] min-h-0 rounded-xl overflow-hidden bg-[#F4F5F6]">
+                {heroImage && (
+                  <img
+                    key={`hero-${indices[0]}`}
+                    src={heroImage}
+                    alt={heroItem?.alternatives[0]?.name}
+                    className="w-full h-full object-cover"
+                    style={{ animation: 'imgFadeIn 220ms ease-out' }}
+                  />
+                )}
+              </div>
             </div>
 
-            {/* ── Mobile: full-bleed hero ── */}
+            {/* Mobile: full-bleed hero + horizontal thumbnail strip */}
             <div className="lg:hidden" key={`mobile-hero-${idx}`}
                  style={{ animation: 'fadeUp 0.4s ease both' }}>
               <div className="aspect-[4/5] bg-[#F4F5F6]">
@@ -139,14 +159,12 @@ function LookPageContent() {
                   />
                 )}
               </div>
-
-              {/* Horizontal thumbnail strip */}
               {stripItems.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide pt-2 px-4 sm:px-8">
                   {stripItems.map((item, i) => {
                     const altIdx = indices[i + 1] ?? 0
-                    const img = item.alternatives[altIdx]?.imageUrl
-                               ?? item.alternatives[0]?.imageUrl
+                    const img    = item.alternatives[altIdx]?.imageUrl
+                                ?? item.alternatives[0]?.imageUrl
                     return (
                       <div key={i}
                            className="w-[28vw] min-w-[88px] max-w-[130px] aspect-[4/5]
@@ -168,22 +186,18 @@ function LookPageContent() {
           </div>
 
           {/* ══ RIGHT: content ═══════════════════════════════════════ */}
-          <div className="px-4 sm:px-8 lg:px-0 pt-5 lg:pt-8 pb-24">
-
-            {/* Back */}
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-1.5 text-[rgba(26,26,26,0.45)]
-                         hover:text-[#1768B0] transition-colors mb-5"
-            >
-              <i className="fa-solid fa-chevron-left text-[11px]" />
-              <span className="text-[12px]">Back to results</span>
-            </button>
+          {/*
+            flex-col + min-h ensures the column is at least as tall as the
+            gallery so mt-auto on the refinement zone pins it to the bottom.
+            sticky bottom-0 then keeps it anchored as the page scrolls.
+          */}
+          <div className="px-4 sm:px-8 lg:px-0 pt-6 lg:pt-8
+                          flex flex-col lg:min-h-[calc(100vh-3.5rem)]">
 
             {/* Outfit tabs */}
             {session.outfits.length > 1 && (
-              <div className="border-b border-black/[0.08] mb-6 -mx-4 sm:-mx-8 lg:mx-0
-                              px-4 sm:px-8 lg:px-0">
+              <div className="border-b border-black/[0.08] mb-6
+                              -mx-4 sm:-mx-8 lg:mx-0 px-4 sm:px-8 lg:px-0">
                 <div ref={tabsRef} className="flex overflow-x-auto scrollbar-hide">
                   {session.outfits.map((outfit, i) => (
                     <button key={i} onClick={() => switchOutfit(i)}
@@ -205,8 +219,9 @@ function LookPageContent() {
               </div>
             )}
 
-            {/* Look info */}
-            <div key={`info-${idx}`} style={{ animation: 'fadeUp 0.35s ease both' }}>
+            {/* Editorial header */}
+            <div key={`info-${idx}`} className="mb-5"
+                 style={{ animation: 'fadeUp 0.35s ease both' }}>
               <p className="text-[10px] tracking-[1.2px] uppercase
                             text-[rgba(26,26,26,0.35)] mb-2">
                 Curated for &ldquo;{q}&rdquo;
@@ -216,13 +231,16 @@ function LookPageContent() {
                 {activeOutfit.name}
               </h1>
               {activeOutfit.description && (
-                <p className="text-[14px] text-[rgba(26,26,26,0.5)] leading-relaxed mb-7">
+                <p className="text-[14px] text-[rgba(26,26,26,0.5)] leading-relaxed">
                   {activeOutfit.description}
                 </p>
               )}
             </div>
 
-            {/* Product cards — ItemCard from OutfitResults */}
+            {/* Hairline separator */}
+            <div className="border-t border-black/[0.06] mb-5" />
+
+            {/* Product cards */}
             <div key={`items-${idx}`} className="flex flex-col gap-4">
               {activeOutfit.items.map((item, i) => (
                 <ItemCard
@@ -235,10 +253,17 @@ function LookPageContent() {
               ))}
             </div>
 
-            {/* ── Refinement zone ───────────────────────────────────── */}
-            <section className="pt-8 pb-4" style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
+            {/* ── Refinement zone ───────────────────────────────────────
+                mt-auto pushes to bottom of flex column.
+                sticky bottom-0 keeps it anchored as the page scrolls.   */}
+            <div className="mt-auto sticky bottom-0
+                            bg-white/[0.97] backdrop-blur-sm
+                            border-t border-black/[0.06]
+                            pt-4 pb-6"
+                 style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
+
               {session.refinements.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-5">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {session.refinements.map((chip, i) => (
                     <button key={i} onClick={() => handleRefine(chip)}
                             className="px-4 py-2 rounded-full border border-black/[0.12] bg-white
@@ -250,6 +275,7 @@ function LookPageContent() {
                   ))}
                 </div>
               )}
+
               <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
                 <div className="flex items-center gap-3 bg-[#EAF1FA] rounded-full
                                 border border-[#1768b0]/15
@@ -276,7 +302,7 @@ function LookPageContent() {
                   </button>
                 </div>
               </form>
-            </section>
+            </div>
 
           </div>
         </div>
