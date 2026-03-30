@@ -1,30 +1,27 @@
 import { NextRequest } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenAI, Type, FunctionCallingConfigMode, type FunctionDeclaration } from '@google/genai'
 import { searchKmart, browseCollection, fetchCollections, Product } from '@/lib/kmart-scraper'
 import { getCategoryConfig } from '@/lib/category-config'
 
-// Retry wrapper for Anthropic API calls — 529 overloaded errors are transient
 async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn()
     } catch (err) {
       const status = (err as { status?: number }).status
-      const isOverloaded = status === 529
-      if (!isOverloaded || attempt === maxAttempts) {
+      const retryable = status === 429 || status === 503
+      if (!retryable || attempt === maxAttempts) {
         console.error(`[API] Error (status=${status ?? 'none'}, attempt=${attempt}):`, err)
         throw err
       }
-      const delay = Math.pow(2, attempt) * 1000  // 2s, 4s, 8s
-      console.log(`[API] 529 overloaded — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
+      const delay = Math.pow(2, attempt) * 1000
+      console.log(`[API] ${status} — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
       await new Promise(r => setTimeout(r, delay))
     }
   }
   throw new Error('unreachable')
 }
 
-// Keyword-based gender filter applied at the data layer as a backstop.
-// Kmart product names reliably contain gendered terms we can check against.
 const WOMENS_TERMS = /\b(women'?s?|ladies|girl'?s?|feminine|womens)\b/i
 const MENS_TERMS   = /\b(men'?s?|guy'?s?|boys?|masculine|mens)\b/i
 
@@ -45,7 +42,6 @@ export async function POST(req: NextRequest) {
   console.log(`\n${'='.repeat(60)}`)
   console.log(`[Request] query="${query}" gender=${gender ?? 'none'} category=${category ?? 'outfits'}`)
 
-  // Fetch category-relevant collections in parallel with building the prompt
   const availableCollections = await fetchCollections(config.collectionKeywords)
   const collectionContext = availableCollections.length > 0
     ? `\n\nAvailable Kmart collections you can browse with browse_collection (id → display name):\n${availableCollections.map(c => `  ${c.id} → ${c.display_name}`).join('\n')}`
@@ -62,51 +58,55 @@ export async function POST(req: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
 
       try {
-        const client = new Anthropic()
+        const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
 
-        const tools: Anthropic.Tool[] = [
+        const functionDeclarations: FunctionDeclaration[] = [
           {
             name: 'search_kmart',
             description: "Search Kmart Australia for products. Returns up to 10 products, each with an id, name, price, and colour.",
-            input_schema: {
-              type: 'object' as const,
-              properties: { query: { type: 'string', description: "Search query, e.g. \"men's black t-shirt\"" } },
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                query: { type: Type.STRING, description: "Search query, e.g. \"men's black t-shirt\"" },
+              },
               required: ['query'],
             },
           },
           {
             name: 'browse_collection',
             description: 'Browse a Kmart collection by its id to get products curated for that theme.',
-            input_schema: {
-              type: 'object' as const,
-              properties: { collection_id: { type: 'string', description: 'The collection id, e.g. "blazers-for-women"' } },
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                collection_id: { type: Type.STRING, description: 'The collection id, e.g. "blazers-for-women"' },
+              },
               required: ['collection_id'],
             },
           },
           {
             name: 'present_outfits',
             description: 'Present the final outfit recommendations. Call once all searches are done.',
-            input_schema: {
-              type: 'object' as const,
+            parameters: {
+              type: Type.OBJECT,
               properties: {
                 outfits: {
-                  type: 'array',
+                  type: Type.ARRAY,
                   items: {
-                    type: 'object',
+                    type: Type.OBJECT,
                     properties: {
-                      name: { type: 'string' },
-                      description: { type: 'string' },
+                      name:        { type: Type.STRING },
+                      description: { type: Type.STRING },
                       items: {
-                        type: 'array',
+                        type: Type.ARRAY,
                         items: {
-                          type: 'object',
+                          type: Type.OBJECT,
                           properties: {
-                            category: { type: 'string' },
-                            description: { type: 'string' },
+                            category:    { type: Type.STRING },
+                            description: { type: Type.STRING },
                             alternatives: {
-                              type: 'array',
+                              type: Type.ARRAY,
                               description: 'Product ids from search results',
-                              items: { type: 'string' },
+                              items: { type: Type.STRING },
                             },
                           },
                         },
@@ -115,8 +115,8 @@ export async function POST(req: NextRequest) {
                   },
                 },
                 refinements: {
-                  type: 'array',
-                  items: { type: 'string' },
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
                   description: '4–6 short refinement suggestions the user could apply to this search. Each should be a 2–5 word lowercase phrase, e.g. "make it more casual", "darker tones", "tighter budget", "add a layer", "more formal". Vary them — cover at least one price direction, one style shift, and one tone or colour direction.',
                 },
               },
@@ -124,140 +124,156 @@ export async function POST(req: NextRequest) {
             },
           },
         ]
+        const tools = [{ functionDeclarations }]
 
-        const productMap = new Map<string, Product>()  // what Claude sees (10/search)
-        const messages: Anthropic.MessageParam[] = [{ role: 'user', content: query }]
+        const productMap = new Map<string, Product>()
+        const contents: object[] = [{ role: 'user', parts: [{ text: query }] }]
         let turn = 0
         let searchIndex = 0
 
         while (true) {
           turn++
-          console.log(`\n[Claude] Turn ${turn} — calling API…`)
-          const response = await withRetry<Anthropic.Message>(() => client.messages.create({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 8192,
-            system: SYSTEM_PROMPT,
-            tools,
-            tool_choice: { type: 'any' },
-            messages,
-          }))
-          console.log(`[Claude] Turn ${turn} — stop_reason: ${response.stop_reason}, blocks: ${response.content.length}, tokens: in=${response.usage.input_tokens} out=${response.usage.output_tokens}`)
+          console.log(`\n[Gemini] Turn ${turn} — calling API…`)
 
-          // Log any reasoning/text Claude emits before tool calls
-          for (const block of response.content) {
-            if (block.type === 'text' && block.text.trim()) {
-              console.log(`[Claude] Thinking: ${block.text.slice(0, 500)}${block.text.length > 500 ? '…' : ''}`)
+          const response = await withRetry(() => ai.models.generateContent({
+            model: 'gemini-3.1-flash-lite-preview',
+            contents,
+            config: {
+              maxOutputTokens: 8192,
+              systemInstruction: SYSTEM_PROMPT,
+              tools,
+              toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY } },
+            },
+          }))
+
+          const functionCalls = response.functionCalls ?? []
+          console.log(`[Gemini] Turn ${turn} — ${functionCalls.length} function call(s)`)
+
+          // Log any text parts
+          for (const part of response.candidates?.[0]?.content?.parts ?? []) {
+            if ('text' in part && (part as { text: string }).text?.trim()) {
+              const t = (part as { text: string }).text
+              console.log(`[Gemini] Text: ${t.slice(0, 300)}${t.length > 300 ? '…' : ''}`)
             }
           }
 
-          messages.push({ role: 'assistant', content: response.content })
+          // Accumulate the model turn in history
+          if (response.candidates?.[0]?.content) {
+            contents.push(response.candidates[0].content)
+          }
 
-          if (response.stop_reason === 'end_turn') {
-            send({ type: 'error', message: 'Claude finished without calling present_outfits' })
+          if (functionCalls.length === 0) {
+            send({ type: 'error', message: 'Gemini finished without calling present_outfits' })
             break
           }
 
-          if (response.stop_reason === 'tool_use') {
-            const toolBlocks = response.content.filter(
-              (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
-            )
-
-            const presentBlock = toolBlocks.find(b => b.name === 'present_outfits')
-            if (presentBlock) {
-              const rawOutfits = (presentBlock.input as {
-                outfits: Array<{
-                  name: string
-                  description: string
-                  items: Array<{ category: string; description: string; alternatives: string[] }>
-                }>
-              }).outfits
-              const outfitCount = Array.isArray(rawOutfits) ? rawOutfits.length : '?'
-              console.log(`[Claude] present_outfits called — ${outfitCount} outfits`)
-              if (Array.isArray(rawOutfits)) {
-                rawOutfits.forEach((o, i) => {
-                  console.log(`[Claude]   Outfit ${i + 1}: "${o.name}" — ${o.items?.length ?? 0} slots`)
-                })
-              }
-
-              // Collect all product IDs referenced in outfit slots
-              const usedInOutfits = new Set(
-                rawOutfits.flatMap(o => o.items.flatMap(i => i.alternatives))
-              )
-
-              // Resolve product IDs back to full product objects
-              const outfits = rawOutfits.map(outfit => ({
-                ...outfit,
-                items: outfit.items.map(item => ({
-                  ...item,
-                  alternatives: item.alternatives
-                    .map(id => productMap.get(id))
-                    .filter((p): p is Product => p !== undefined),
-                })),
-              }))
-
-              send({ type: 'done', result: outfits })
-
-              // Emit AI-generated refinement chips
-              const rawRefinements = (presentBlock.input as { refinements?: unknown }).refinements
-              const refinements = Array.isArray(rawRefinements)
-                ? (rawRefinements as string[]).filter(r => typeof r === 'string').slice(0, 6)
-                : []
-              if (refinements.length > 0) {
-                send({ type: 'refinements', result: refinements })
-              }
-
-              return
+          // ── present_outfits ───────────────────────────────────────────
+          const presentCall = functionCalls.find(c => c.name === 'present_outfits')
+          if (presentCall) {
+            const args = presentCall.args as {
+              outfits: Array<{
+                name: string
+                description: string
+                items: Array<{ category: string; description: string; alternatives: string[] }>
+              }>
+              refinements?: string[]
             }
 
-            const searchBlocks = toolBlocks.filter(b => b.name === 'search_kmart')
-            const browseBlocks = toolBlocks.filter(b => b.name === 'browse_collection')
-
-            const allFetchBlocks = [
-              ...searchBlocks.map(b => ({ block: b, type: 'search' as const, label: (b.input as { query: string }).query })),
-              ...browseBlocks.map(b => ({ block: b, type: 'browse' as const, label: (b.input as { collection_id: string }).collection_id })),
-            ]
-
-            allFetchBlocks.forEach(({ type, label }) => {
-              send({ type: 'status', message: type === 'search' ? `Searching for "${label}"…` : `Browsing collection "${label}"…` })
+            const rawOutfits = args.outfits ?? []
+            console.log(`[Gemini] present_outfits called — ${rawOutfits.length} outfits`)
+            rawOutfits.forEach((o, i) => {
+              console.log(`[Gemini]   Outfit ${i + 1}: "${o.name}" — ${o.items?.length ?? 0} slots`)
             })
-            console.log(`[Claude] Tool calls (${allFetchBlocks.length}): ${allFetchBlocks.map(f => `${f.type === 'search' ? 'search_kmart' : 'browse_collection'}("${f.label}")`).join(', ')}`)
 
-            const t0 = Date.now()
-            const results = await Promise.all(
-              allFetchBlocks.map(({ type, label }) =>
-                type === 'search' ? searchKmart(label, config.categoryFilter) : browseCollection(label)
-              )
-            )
-            console.log(`[Search] All ${allFetchBlocks.length} fetches done in ${Date.now() - t0}ms`)
+            const outfits = rawOutfits.map(outfit => ({
+              ...outfit,
+              items: outfit.items.map(item => ({
+                ...item,
+                alternatives: item.alternatives
+                  .map(id => productMap.get(id))
+                  .filter((p): p is Product => p !== undefined),
+              })),
+            }))
 
-            const toolResults: Anthropic.ToolResultBlockParam[] = allFetchBlocks.map(({ block, type, label }, i) => {
-              const allProducts = config.showGenderFilter ? filterByGender(results[i], gender) : results[i]
-              const products = allProducts.slice(0, 10)  // Claude sees top 10
-              const si = searchIndex++
-              console.log(`[${type === 'search' ? 'search_kmart' : 'browse_collection'}] "${label}" → ${allProducts.length} total, ${products.length} to Claude`)
-              if (products.length > 0) {
-                send({ type: 'status', message: `Found ${products.length} options for "${label}"` })
-              } else {
-                send({ type: 'status', message: `No results for "${label}" — skipping` })
-              }
+            send({ type: 'done', result: outfits })
 
-              // Tag Claude's 10 products and register in productMap for id resolution
-              const tagged = products.map((p, pi) => {
-                const id = `q${si}p${pi}`
-                productMap.set(id, p)
-                return { id, name: p.name, price: p.price, ...(p.colour ? { colour: p.colour } : {}) }
-              })
+            const refinements = Array.isArray(args.refinements)
+              ? (args.refinements as string[]).filter(r => typeof r === 'string').slice(0, 6)
+              : []
+            if (refinements.length > 0) send({ type: 'refinements', result: refinements })
 
-              return {
-                type: 'tool_result' as const,
-                tool_use_id: block.id,
-                content: tagged.length > 0
-                  ? JSON.stringify(tagged)
-                  : 'No results found. Skip this category and proceed with what you have.',
-              }
-            })
-            messages.push({ role: 'user', content: toolResults })
+            return
           }
+
+          // ── search_kmart / browse_collection ─────────────────────────
+          const fetchCalls = functionCalls.filter(
+            c => c.name === 'search_kmart' || c.name === 'browse_collection'
+          )
+
+          if (fetchCalls.length === 0) {
+            send({ type: 'error', message: 'Unexpected: no recognised function calls' })
+            break
+          }
+
+          fetchCalls.forEach(c => {
+            const isSearch = c.name === 'search_kmart'
+            const label = isSearch
+              ? (c.args as { query: string }).query
+              : (c.args as { collection_id: string }).collection_id
+            send({
+              type: 'status',
+              message: isSearch ? `Searching for "${label}"…` : `Browsing collection "${label}"…`,
+            })
+          })
+
+          console.log(`[Gemini] Tool calls (${fetchCalls.length}): ${fetchCalls.map(c => `${c.name}("${c.name === 'search_kmart' ? (c.args as {query:string}).query : (c.args as {collection_id:string}).collection_id}")`).join(', ')}`)
+
+          const t0 = Date.now()
+          const results = await Promise.all(
+            fetchCalls.map(c =>
+              c.name === 'search_kmart'
+                ? searchKmart((c.args as { query: string }).query, config.categoryFilter)
+                : browseCollection((c.args as { collection_id: string }).collection_id)
+            )
+          )
+          console.log(`[Search] All ${fetchCalls.length} fetches done in ${Date.now() - t0}ms`)
+
+          const functionResponses = fetchCalls.map((c, i) => {
+            const isSearch = c.name === 'search_kmart'
+            const label = isSearch
+              ? (c.args as { query: string }).query
+              : (c.args as { collection_id: string }).collection_id
+            const allProducts = config.showGenderFilter ? filterByGender(results[i], gender) : results[i]
+            const products = allProducts.slice(0, 10)
+            const si = searchIndex++
+            console.log(`[${isSearch ? 'search_kmart' : 'browse_collection'}] "${label}" → ${allProducts.length} total, ${products.length} to Gemini`)
+
+            if (products.length > 0) {
+              send({ type: 'status', message: `Found ${products.length} options for "${label}"` })
+            } else {
+              send({ type: 'status', message: `No results for "${label}" — skipping` })
+            }
+
+            const tagged = products.map((p, pi) => {
+              const id = `q${si}p${pi}`
+              productMap.set(id, p)
+              return { id, name: p.name, price: p.price, ...(p.colour ? { colour: p.colour } : {}) }
+            })
+
+            return {
+              functionResponse: {
+                name: c.name,
+                id: c.id,
+                response: {
+                  result: tagged.length > 0
+                    ? JSON.stringify(tagged)
+                    : 'No results found. Skip this category and proceed with what you have.',
+                },
+              },
+            }
+          })
+
+          contents.push({ role: 'user', parts: functionResponses })
         }
       } catch (err) {
         console.error('[Search] Route error:', err)

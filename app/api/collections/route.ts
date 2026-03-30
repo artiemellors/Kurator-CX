@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenAI, Type, FunctionCallingConfigMode, type FunctionDeclaration } from '@google/genai'
 import { searchKmart, browseCollection, fetchCollections, Product } from '@/lib/kmart-scraper'
 
 async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
@@ -8,9 +8,10 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
       return await fn()
     } catch (err) {
       const status = (err as { status?: number }).status
-      if (status !== 529 || attempt === maxAttempts) throw err
+      const retryable = status === 429 || status === 503
+      if (!retryable || attempt === maxAttempts) throw err
       const delay = Math.pow(2, attempt) * 1000
-      console.log(`[Collections] 529 overloaded — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
+      console.log(`[Collections] ${status} — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
       await new Promise(r => setTimeout(r, delay))
     }
   }
@@ -48,42 +49,46 @@ export async function POST(req: NextRequest) {
     ? `\n\nAvailable Kmart collections you can browse:\n${availableCollections.map(c => `  ${c.id} → ${c.display_name}`).join('\n')}`
     : ''
 
-  const client = new Anthropic()
+  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
 
-  const tools: Anthropic.Tool[] = [
+  const functionDeclarations: FunctionDeclaration[] = [
     {
       name: 'search_kmart',
       description: 'Search Kmart Australia for products. Returns up to 10 products.',
-      input_schema: {
-        type: 'object' as const,
-        properties: { query: { type: 'string' } },
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          query: { type: Type.STRING },
+        },
         required: ['query'],
       },
     },
     {
       name: 'browse_collection',
       description: 'Browse a Kmart collection by its id.',
-      input_schema: {
-        type: 'object' as const,
-        properties: { collection_id: { type: 'string' } },
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          collection_id: { type: Type.STRING },
+        },
         required: ['collection_id'],
       },
     },
     {
       name: 'present_collections',
       description: 'Present the final themed collections. Call once all searches are done.',
-      input_schema: {
-        type: 'object' as const,
+      parameters: {
+        type: Type.OBJECT,
         properties: {
           collections: {
-            type: 'array',
+            type: Type.ARRAY,
             items: {
-              type: 'object',
+              type: Type.OBJECT,
               properties: {
-                name: { type: 'string', description: 'Short editorial collection name' },
+                name: { type: Type.STRING, description: 'Short editorial collection name' },
                 product_ids: {
-                  type: 'array',
-                  items: { type: 'string' },
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
                   description: 'Product ids ordered by colour story + outfit adjacency: neutrals/whites first, then earth tones, then mid-tones, then accents. Within each colour group, items worn together appear adjacent.',
                 },
               },
@@ -95,37 +100,40 @@ export async function POST(req: NextRequest) {
       },
     },
   ]
+  const tools = [{ functionDeclarations }]
 
   const productMap = new Map<string, Product>()
-  const messages: Anthropic.MessageParam[] = [{
+  const contents: object[] = [{
     role: 'user',
-    content: `Create 3 themed product collections for: "${query}"${collectionContext}`,
+    parts: [{ text: `Create 3 themed product collections for: "${query}"${collectionContext}` }],
   }]
 
   let searchIndex = 0
 
   for (let turn = 0; turn < 12; turn++) {
-    const response = await withRetry<Anthropic.Message>(() => client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      tools,
-      tool_choice: { type: 'any' },
-      messages,
+    const response = await withRetry(() => ai.models.generateContent({
+      model: 'gemini-3.1-flash-lite-preview',
+      contents,
+      config: {
+        maxOutputTokens: 4096,
+        systemInstruction: SYSTEM_PROMPT,
+        tools,
+        toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY } },
+      },
     }))
 
-    console.log(`[Collections] Turn ${turn + 1} — stop_reason: ${response.stop_reason}`)
-    messages.push({ role: 'assistant', content: response.content })
+    const functionCalls = response.functionCalls ?? []
+    console.log(`[Collections] Turn ${turn + 1} — ${functionCalls.length} function call(s)`)
 
-    if (response.stop_reason === 'end_turn') break
+    if (response.candidates?.[0]?.content) {
+      contents.push(response.candidates[0].content)
+    }
 
-    const toolBlocks = response.content.filter(
-      (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
-    )
+    if (functionCalls.length === 0) break
 
-    const presentBlock = toolBlocks.find(b => b.name === 'present_collections')
-    if (presentBlock) {
-      const raw = (presentBlock.input as {
+    const presentCall = functionCalls.find(c => c.name === 'present_collections')
+    if (presentCall) {
+      const raw = (presentCall.args as {
         collections: Array<{ name: string; product_ids: string[] }>
       }).collections
 
@@ -142,20 +150,19 @@ export async function POST(req: NextRequest) {
       return Response.json({ collections })
     }
 
-    const fetchBlocks = [
-      ...toolBlocks.filter(b => b.name === 'search_kmart'),
-      ...toolBlocks.filter(b => b.name === 'browse_collection'),
-    ]
+    const fetchCalls = functionCalls.filter(
+      c => c.name === 'search_kmart' || c.name === 'browse_collection'
+    )
 
     const results = await Promise.all(
-      fetchBlocks.map(b =>
-        b.name === 'search_kmart'
-          ? searchKmart((b.input as { query: string }).query)
-          : browseCollection((b.input as { collection_id: string }).collection_id)
+      fetchCalls.map(c =>
+        c.name === 'search_kmart'
+          ? searchKmart((c.args as { query: string }).query)
+          : browseCollection((c.args as { collection_id: string }).collection_id)
       )
     )
 
-    const toolResults: Anthropic.ToolResultBlockParam[] = fetchBlocks.map((b, i) => {
+    const functionResponses = fetchCalls.map((c, i) => {
       const products = results[i].slice(0, 10)
       const si = searchIndex++
       const tagged = products.map((p, pi) => {
@@ -164,15 +171,19 @@ export async function POST(req: NextRequest) {
         return { id, name: p.name, price: p.price, ...(p.colour ? { colour: p.colour } : {}) }
       })
       return {
-        type: 'tool_result' as const,
-        tool_use_id: b.id,
-        content: tagged.length > 0
-          ? JSON.stringify(tagged)
-          : 'No results found.',
+        functionResponse: {
+          name: c.name,
+          id: c.id,
+          response: {
+            result: tagged.length > 0
+              ? JSON.stringify(tagged)
+              : 'No results found.',
+          },
+        },
       }
     })
 
-    messages.push({ role: 'user', content: toolResults })
+    contents.push({ role: 'user', parts: functionResponses })
   }
 
   return Response.json({ collections: [] })

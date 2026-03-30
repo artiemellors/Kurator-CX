@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenAI, Type, FunctionCallingConfigMode, type FunctionDeclaration } from '@google/genai'
 import { searchKmart, browseCollection, Product } from '@/lib/kmart-scraper'
 import type { Outfit, OutfitItem, Product as OutfitProduct } from '@/app/components/OutfitResults'
 
@@ -9,9 +9,10 @@ async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
       return await fn()
     } catch (err) {
       const status = (err as { status?: number }).status
-      if (status !== 529 || attempt === maxAttempts) throw err
+      const retryable = status === 429 || status === 503
+      if (!retryable || attempt === maxAttempts) throw err
       const delay = Math.pow(2, attempt) * 1000
-      console.log(`[Refine] 529 overloaded — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
+      console.log(`[Refine] ${status} — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
       await new Promise(r => setTimeout(r, delay))
     }
   }
@@ -48,7 +49,6 @@ export async function POST(req: NextRequest) {
   console.log(`\n${'='.repeat(60)}`)
   console.log(`[Refine] query="${originalQuery}" refinement="${refinement}"`)
 
-  // Pre-populate productMap with all existing outfit products using stable IDs
   const productMap = new Map<string, Product>()
   outfit.items.forEach((item, itemIdx) => {
     item.alternatives.forEach((alt, altIdx) => {
@@ -87,51 +87,55 @@ Rules:
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
 
       try {
-        const client = new Anthropic()
+        const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
 
-        const tools: Anthropic.Tool[] = [
+        const functionDeclarations: FunctionDeclaration[] = [
           {
             name: 'search_kmart',
             description: 'Search Kmart Australia for products. Returns up to 10 products with id, name, price, and colour.',
-            input_schema: {
-              type: 'object' as const,
-              properties: { query: { type: 'string', description: 'Search query, e.g. "men\'s chino trousers"' } },
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                query: { type: Type.STRING, description: "Search query, e.g. \"men's chino trousers\"" },
+              },
               required: ['query'],
             },
           },
           {
             name: 'browse_collection',
             description: 'Browse a Kmart collection by its id to get products curated for that theme.',
-            input_schema: {
-              type: 'object' as const,
-              properties: { collection_id: { type: 'string' } },
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                collection_id: { type: Type.STRING },
+              },
               required: ['collection_id'],
             },
           },
           {
             name: 'present_outfits',
             description: 'Present the refined outfit. Call once all needed searches are complete.',
-            input_schema: {
-              type: 'object' as const,
+            parameters: {
+              type: Type.OBJECT,
               properties: {
                 outfits: {
-                  type: 'array',
+                  type: Type.ARRAY,
                   items: {
-                    type: 'object',
+                    type: Type.OBJECT,
                     properties: {
-                      name: { type: 'string' },
-                      description: { type: 'string' },
+                      name:        { type: Type.STRING },
+                      description: { type: Type.STRING },
                       items: {
-                        type: 'array',
+                        type: Type.ARRAY,
                         items: {
-                          type: 'object',
+                          type: Type.OBJECT,
                           properties: {
-                            category:     { type: 'string' },
-                            description:  { type: 'string' },
+                            category:    { type: Type.STRING },
+                            description: { type: Type.STRING },
                             alternatives: {
-                              type: 'array',
+                              type: Type.ARRAY,
                               description: 'Product IDs — either existing_X_Y for kept items or new search result IDs',
-                              items: { type: 'string' },
+                              items: { type: Type.STRING },
                             },
                           },
                         },
@@ -140,8 +144,8 @@ Rules:
                   },
                 },
                 refinements: {
-                  type: 'array',
-                  items: { type: 'string' },
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
                   description: '4–6 short refinement suggestions relevant to this updated look. Each should be a 2–5 word lowercase phrase.',
                 },
               },
@@ -149,9 +153,10 @@ Rules:
             },
           },
         ]
+        const tools = [{ functionDeclarations }]
 
-        const messages: Anthropic.MessageParam[] = [
-          { role: 'user', content: `Refine this outfit: "${refinement}"` },
+        const contents: object[] = [
+          { role: 'user', parts: [{ text: `Refine this outfit: "${refinement}"` }] },
         ]
 
         let searchIndex = 0
@@ -161,40 +166,41 @@ Rules:
           turn++
           console.log(`[Refine] Turn ${turn} — calling API…`)
 
-          const response = await withRetry<Anthropic.Message>(() => client.messages.create({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 4096,
-            system: SYSTEM_PROMPT,
-            tools,
-            tool_choice: { type: 'any' },
-            messages,
+          const response = await withRetry(() => ai.models.generateContent({
+            model: 'gemini-3.1-flash-lite-preview',
+            contents,
+            config: {
+              maxOutputTokens: 4096,
+              systemInstruction: SYSTEM_PROMPT,
+              tools,
+              toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY } },
+            },
           }))
 
-          console.log(`[Refine] Turn ${turn} — stop_reason: ${response.stop_reason}, tokens: in=${response.usage.input_tokens} out=${response.usage.output_tokens}`)
-          messages.push({ role: 'assistant', content: response.content })
+          const functionCalls = response.functionCalls ?? []
+          console.log(`[Refine] Turn ${turn} — ${functionCalls.length} function call(s)`)
 
-          if (response.stop_reason === 'end_turn') {
-            send({ type: 'error', message: 'Claude finished without calling present_outfits' })
+          if (response.candidates?.[0]?.content) {
+            contents.push(response.candidates[0].content)
+          }
+
+          if (functionCalls.length === 0) {
+            send({ type: 'error', message: 'Gemini finished without calling present_outfits' })
             break
           }
 
-          const toolBlocks = response.content.filter(
-            (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
-          )
-
-          // ── present_outfits ───────────────────────────────────────────────
-          const presentBlock = toolBlocks.find(b => b.name === 'present_outfits')
-          if (presentBlock) {
-            const raw = (presentBlock.input as {
+          // ── present_outfits ───────────────────────────────────────────
+          const presentCall = functionCalls.find(c => c.name === 'present_outfits')
+          if (presentCall) {
+            const raw = presentCall.args as {
               outfits: Array<{
                 name: string
                 description: string
                 items: Array<{ category: string; description: string; alternatives: string[] }>
               }>
               refinements?: string[]
-            })
+            }
 
-            // Resolve product IDs — handles both existing_X_Y and new q0p0 IDs
             const resolvedOutfits: Outfit[] = raw.outfits.map(o => ({
               name:        o.name,
               description: o.description ?? '',
@@ -207,12 +213,10 @@ Rules:
               })).filter(item => item.alternatives.length > 0),
             }))
 
-            const outfitCount = resolvedOutfits.length
-            const kept    = resolvedOutfits[0]?.items.flatMap(i => i.alternatives).filter(p => {
-              // rough check: see if any existing_ ID resolves to this product
-              return Array.from(productMap.entries()).some(([k, v]) => k.startsWith('existing_') && v === p)
-            }).length ?? 0
-            console.log(`[Refine] Resolved ${outfitCount} outfit(s). Kept ~${kept} existing products.`)
+            const kept = resolvedOutfits[0]?.items.flatMap(i => i.alternatives).filter(p =>
+              Array.from(productMap.entries()).some(([k, v]) => k.startsWith('existing_') && v === p)
+            ).length ?? 0
+            console.log(`[Refine] Resolved ${resolvedOutfits.length} outfit(s). Kept ~${kept} existing products.`)
 
             send({ type: 'done', result: resolvedOutfits[0] ?? null })
 
@@ -224,33 +228,36 @@ Rules:
             return
           }
 
-          // ── search_kmart / browse_collection ─────────────────────────────
-          const fetchBlocks = [
-            ...toolBlocks.filter(b => b.name === 'search_kmart'),
-            ...toolBlocks.filter(b => b.name === 'browse_collection'),
-          ]
+          // ── search_kmart / browse_collection ─────────────────────────
+          const fetchCalls = functionCalls.filter(
+            c => c.name === 'search_kmart' || c.name === 'browse_collection'
+          )
 
-          if (fetchBlocks.length === 0) {
-            send({ type: 'error', message: 'Unexpected: no tool calls and no present_outfits' })
+          if (fetchCalls.length === 0) {
+            send({ type: 'error', message: 'Unexpected: no recognised function calls' })
             break
           }
 
-          fetchBlocks.forEach(b => {
-            const label = b.name === 'search_kmart'
-              ? (b.input as { query: string }).query
-              : (b.input as { collection_id: string }).collection_id
-            send({ type: 'status', message: b.name === 'search_kmart' ? `Searching for "${label}"…` : `Browsing "${label}"…` })
+          fetchCalls.forEach(c => {
+            const isSearch = c.name === 'search_kmart'
+            const label = isSearch
+              ? (c.args as { query: string }).query
+              : (c.args as { collection_id: string }).collection_id
+            send({
+              type: 'status',
+              message: isSearch ? `Searching for "${label}"…` : `Browsing "${label}"…`,
+            })
           })
 
           const results = await Promise.all(
-            fetchBlocks.map(b =>
-              b.name === 'search_kmart'
-                ? searchKmart((b.input as { query: string }).query)
-                : browseCollection((b.input as { collection_id: string }).collection_id)
+            fetchCalls.map(c =>
+              c.name === 'search_kmart'
+                ? searchKmart((c.args as { query: string }).query)
+                : browseCollection((c.args as { collection_id: string }).collection_id)
             )
           )
 
-          const toolResults: Anthropic.ToolResultBlockParam[] = fetchBlocks.map((b, i) => {
+          const functionResponses = fetchCalls.map((c, i) => {
             const products = results[i].slice(0, 10)
             const si = searchIndex++
             const tagged = products.map((p, pi) => {
@@ -258,17 +265,24 @@ Rules:
               productMap.set(id, p)
               return { id, name: p.name, price: p.price, ...(p.colour ? { colour: p.colour } : {}) }
             })
-            console.log(`[Refine] "${b.name === 'search_kmart' ? (b.input as {query:string}).query : (b.input as {collection_id:string}).collection_id}" → ${products.length} products`)
+            const label = c.name === 'search_kmart'
+              ? (c.args as { query: string }).query
+              : (c.args as { collection_id: string }).collection_id
+            console.log(`[Refine] "${label}" → ${products.length} products`)
             return {
-              type:        'tool_result' as const,
-              tool_use_id: b.id,
-              content:     tagged.length > 0
-                ? JSON.stringify(tagged)
-                : 'No results found.',
+              functionResponse: {
+                name: c.name,
+                id: c.id,
+                response: {
+                  result: tagged.length > 0
+                    ? JSON.stringify(tagged)
+                    : 'No results found.',
+                },
+              },
             }
           })
 
-          messages.push({ role: 'user', content: toolResults })
+          contents.push({ role: 'user', parts: functionResponses })
         }
       } catch (err) {
         console.error('[Refine] Route error:', err)
