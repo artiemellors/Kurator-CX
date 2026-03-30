@@ -132,7 +132,7 @@ function LookPageContent() {
               )}
 
               {/* Hero — RIGHT, takes remaining width */}
-              <div className="flex-[3] min-h-0 rounded-xl overflow-hidden bg-[#F4F5F6]">
+              <div className="flex-[2] min-h-0 rounded-xl overflow-hidden bg-[#F4F5F6]">
                 {heroImage && (
                   <img
                     key={`hero-${indices[0]}`}
@@ -191,8 +191,7 @@ function LookPageContent() {
             gallery so mt-auto on the refinement zone pins it to the bottom.
             sticky bottom-0 then keeps it anchored as the page scrolls.
           */}
-          <div className="px-4 sm:px-8 lg:px-0 pt-6 lg:pt-8
-                          flex flex-col lg:min-h-[calc(100vh-3.5rem)]">
+          <div className="px-4 sm:px-8 lg:px-0 pt-6 lg:pt-8 pb-16">
 
             {/* Outfit tabs */}
             {session.outfits.length > 1 && (
@@ -253,13 +252,8 @@ function LookPageContent() {
               ))}
             </div>
 
-            {/* ── Refinement zone ───────────────────────────────────────
-                mt-auto pushes to bottom of flex column.
-                sticky bottom-0 keeps it anchored as the page scrolls.   */}
-            <div className="mt-auto sticky bottom-0
-                            bg-white/[0.97] backdrop-blur-sm
-                            border-t border-black/[0.06]
-                            pt-4 pb-6"
+            {/* ── Refinement zone ───────────────────────────────────── */}
+            <div className="border-t border-black/[0.06] pt-6 pb-8 mt-6"
                  style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
 
               {session.refinements.length > 0 && (
