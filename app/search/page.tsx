@@ -9,7 +9,7 @@ import { KmartProductCard, type CollectionProduct } from '../components/ProductC
 import { saveLookSession } from '@/lib/look-session'
 
 // Where the CuratedLooksTile is inserted in the product grid (0-indexed)
-const TILE_INSERT_POSITION = 4
+const TILE_INSERT_POSITION = 5
 
 type GridItem =
   | { type: 'product'; data: CollectionProduct }
@@ -199,7 +199,7 @@ function SearchResults() {
         className="sticky top-0 z-20 bg-white border-b border-black/[0.06]"
         style={{ animation: 'fadeDown 0.6s ease both' }}
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-8 h-20 flex items-center gap-4 sm:gap-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-20 flex items-center gap-4 sm:gap-6">
           <a href="/" className="flex items-center shrink-0">
             <Image src="/Logo.svg" alt="Kmart" width={100} height={32} priority />
           </a>
@@ -230,7 +230,7 @@ function SearchResults() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-8 py-8 pb-16">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-8 py-8 pb-16">
 
         {/* Error */}
         {error && (
@@ -240,16 +240,16 @@ function SearchResults() {
         )}
 
         {/* Product grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6">
           {showSkeletons && (
             <>
-              {Array.from({ length: insertPos || 4 }).map((_, i) => <SkeletonCard key={`pre-${i}`} />)}
+              {Array.from({ length: insertPos || 5 }).map((_, i) => <SkeletonCard key={`pre-${i}`} />)}
               <SkeletonTile />
-              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={`post-${i}`} />)}
+              {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={`post-${i}`} />)}
             </>
           )}
           {showNoResults && (
-            <div className="col-span-2 sm:col-span-4 py-16 text-center text-[rgba(26,26,26,0.4)] text-sm">
+            <div className="col-span-2 sm:col-span-4 xl:col-span-5 py-16 text-center text-[rgba(26,26,26,0.4)] text-sm">
               No results found for &ldquo;{q}&rdquo; — try a different search
             </div>
           )}
