@@ -242,7 +242,8 @@ function LookPageContent() {
 
             {/* Outfit tabs */}
             {session.outfits.length > 1 && (
-              <div className="border-b border-black/[0.08] mb-6
+              <div className="sticky top-14 z-10 bg-white
+                              border-b border-black/[0.08] mb-6
                               -mx-4 sm:-mx-8 lg:mx-0 px-4 sm:px-8 lg:px-0">
                 <div ref={tabsRef} className="flex overflow-x-auto scrollbar-hide">
                   {session.outfits.map((outfit, i) => (
@@ -358,8 +359,8 @@ function LookPageContent() {
                 disabled={!refineQuery.trim()}
                 className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
                            bg-[#1768b0] text-white
-                           disabled:bg-[#1768b0]/20 disabled:text-[#1768b0]/40
-                           transition-all duration-200"
+                           disabled:opacity-40
+                           transition-opacity duration-200"
               >
                 <i className="fa-solid fa-arrow-up text-[12px]" />
               </button>
