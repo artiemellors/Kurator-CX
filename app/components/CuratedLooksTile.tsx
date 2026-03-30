@@ -101,13 +101,6 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
         <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
       </div>
 
-      {/* Outfit description */}
-      {activeOutfit.description && (
-        <p className="px-5 shrink-0 text-[13px] text-[rgba(26,26,26,0.5)] leading-relaxed line-clamp-3">
-          {activeOutfit.description}
-        </p>
-      )}
-
       {/* Gallery
           - overflow-x-auto forces overflow-y:auto (CSS coercion) — py-4 keeps bobbing
             circles (max 7px amp) within the container so they aren't clipped
@@ -133,7 +126,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
                 {/* Hover scale — separate layer so it doesn't fight the JS bob transform */}
                 <div className="transition-transform hover:scale-105 hover:z-10">
                   {/* Circle clip — overflow-hidden lives only here */}
-                  <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] xl:h-[190px] xl:w-[190px] rounded-[100px] overflow-hidden bg-[#F4F5F6]">
+                  <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] xl:h-[210px] xl:w-[210px] rounded-[100px] overflow-hidden bg-[#F4F5F6]">
                     <img
                       src={p.imageUrl}
                       alt={p.name}
