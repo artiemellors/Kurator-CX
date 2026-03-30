@@ -118,7 +118,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
         ref={galleryRef}
         className="flex-1 min-h-0 overflow-x-auto scrollbar-hide"
       >
-        <div className="flex items-center px-5 py-4 min-w-max h-full">
+        <div className={`flex items-center py-4 h-full ${images.length <= 3 ? 'justify-center w-full' : 'px-5 min-w-max'}`}>
           {images.map((p, i) => (
             // Outermost: JS-controlled Y bob via ref — NO animation here (CSS animation
             // with fill-mode:both overrides inline style.transform on the same element)
