@@ -225,10 +225,12 @@ function LookPageContent() {
                             text-[rgba(26,26,26,0.35)] mb-2">
                 Curated for &ldquo;{q}&rdquo;
               </p>
-              <h1 className="text-[24px] sm:text-[28px] font-bold text-[#1a1a1a]
-                             leading-tight mb-3">
-                {activeOutfit.name}
-              </h1>
+              {session.outfits.length <= 1 && (
+                <h1 className="text-[24px] sm:text-[28px] font-bold text-[#1a1a1a]
+                               leading-tight mb-3">
+                  {activeOutfit.name}
+                </h1>
+              )}
               {activeOutfit.description && (
                 <p className="text-[14px] text-[rgba(26,26,26,0.5)] leading-relaxed">
                   {activeOutfit.description}
