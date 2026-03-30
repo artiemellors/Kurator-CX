@@ -470,7 +470,70 @@ function LookPageContent() {
               </div>
             )}
 
-            {/* Spacer so content isn't hidden behind fixed bar on mobile */}
+            {/* ── Refinement input — fixed on mobile, in-flow on desktop ── */}
+            <div className="fixed bottom-0 left-0 right-0 z-20
+                            bg-white border-t border-black/[0.06]
+                            px-4 pt-3 pb-8
+                            lg:static lg:bottom-auto lg:left-auto lg:right-auto lg:z-auto
+                            lg:bg-transparent lg:border-t lg:border-black/[0.06]
+                            lg:px-0 lg:pt-6 lg:pb-8 lg:mt-6">
+              {refineError && (
+                <p className="text-[12px] text-red-500 mb-2 px-1">{refineError}</p>
+              )}
+              <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
+                <div className={`flex items-center gap-3 bg-white rounded-full
+                                border transition-all duration-200 px-5 py-3.5
+                                ${refining
+                                  ? 'border-black/[0.08]'
+                                  : 'border-black/[0.12] focus-within:border-[#1768b0]/50 focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.06)]'
+                                }`}>
+                  <i className={`text-[13px] text-black/25 shrink-0 fa-solid
+                                 ${refining ? 'fa-spinner animate-spin' : 'fa-wand-magic-sparkles'}`} />
+                  <input
+                    value={refineQuery}
+                    onChange={e => setRefineQuery(e.target.value)}
+                    onFocus={() => setInputFocused(true)}
+                    onBlur={() => setInputFocused(false)}
+                    disabled={refining}
+                    placeholder={
+                      refining
+                        ? (refineStatus ?? 'Updating look…')
+                        : (!inputFocused && !refineQuery) ? typedText : 'What would you change?'
+                    }
+                    className="flex-1 min-w-0 bg-transparent outline-none text-[14px]
+                               text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]
+                               disabled:cursor-not-allowed"
+                  />
+                  {refining ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        refineAbortRef.current?.abort()
+                        setRefining(false)
+                        setRefineStatus(null)
+                      }}
+                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                                 border border-black/[0.12] text-black/40
+                                 hover:border-black/25 hover:text-black/60
+                                 transition-all duration-200"
+                    >
+                      <i className="fa-solid fa-xmark text-[12px]" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!refineQuery.trim()}
+                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                                 bg-[#1768b0] text-white transition-opacity duration-200"
+                    >
+                      <i className="fa-solid fa-arrow-up text-[12px]" />
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* Spacer reserves space for the fixed bar on mobile */}
             <div className="h-24 lg:hidden" />
 
           </div>
@@ -479,77 +542,6 @@ function LookPageContent() {
 
       {/* ── Shop the look — Claude-curated collections ───────────────────── */}
       <ProductCollections collections={collections} stickyTop="top-14" />
-
-      {/* ── Refinement input — fixed bottom on mobile, in-flow on desktop ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-20
-                      bg-white border-t border-black/[0.06]
-                      px-4 pt-3 pb-8
-                      lg:static lg:bottom-auto lg:left-auto lg:right-auto lg:z-auto
-                      lg:bg-transparent lg:border-t-0
-                      lg:max-w-[1600px] lg:mx-auto
-                      lg:px-8 lg:pt-0 lg:pb-0"
-           style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
-        {/* On desktop we want the input inside the right column — constrain width */}
-        <div className="lg:max-w-[440px] lg:ml-auto lg:pr-0 lg:pb-8 lg:pt-6 lg:border-t lg:border-black/[0.06]">
-          {/* Error message */}
-          {refineError && (
-            <p className="text-[12px] text-red-500 mb-2 px-1">{refineError}</p>
-          )}
-          <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
-            <div className={`flex items-center gap-3 bg-white rounded-full
-                            border transition-all duration-200 px-5 py-3.5
-                            ${refining
-                              ? 'border-black/[0.08]'
-                              : 'border-black/[0.12] focus-within:border-[#1768b0]/50 focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.06)]'
-                            }`}>
-              <i className={`text-[13px] text-black/25 shrink-0 fa-solid
-                             ${refining ? 'fa-spinner animate-spin' : 'fa-wand-magic-sparkles'}`} />
-              <input
-                value={refineQuery}
-                onChange={e => setRefineQuery(e.target.value)}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                disabled={refining}
-                placeholder={
-                  refining
-                    ? (refineStatus ?? 'Updating look…')
-                    : (!inputFocused && !refineQuery) ? typedText : 'What would you change?'
-                }
-                className="flex-1 min-w-0 bg-transparent outline-none text-[14px]
-                           text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]
-                           disabled:cursor-not-allowed"
-              />
-              {refining ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    refineAbortRef.current?.abort()
-                    setRefining(false)
-                    setRefineStatus(null)
-                  }}
-                  className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
-                             border border-black/[0.12] text-black/40
-                             hover:border-black/25 hover:text-black/60
-                             transition-all duration-200"
-                >
-                  <i className="fa-solid fa-xmark text-[12px]" />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={!refineQuery.trim()}
-                  className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
-                             bg-[#1768b0] text-white
-                             disabled:opacity-40
-                             transition-opacity duration-200"
-                >
-                  <i className="fa-solid fa-arrow-up text-[12px]" />
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
   )
 }
