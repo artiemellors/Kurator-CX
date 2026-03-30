@@ -24,7 +24,8 @@ function LookPageContent() {
   const [refining, setRefining]         = useState(false)
   const [refineStatus, setRefineStatus] = useState<string | null>(null)
   const [refineError, setRefineError]   = useState<string | null>(null)
-  const tabsRef       = useRef<HTMLDivElement>(null)
+  const [refineCount, setRefineCount]   = useState(0)
+  const tabsRef        = useRef<HTMLDivElement>(null)
   const refineAbortRef = useRef<AbortController | null>(null)
   const phraseIdxRef  = useRef(0)
   const charIdxRef    = useRef(0)
@@ -105,6 +106,9 @@ function LookPageContent() {
     tab?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' })
   }, [idx])
 
+  // Abort any in-flight refinement on unmount
+  useEffect(() => () => { refineAbortRef.current?.abort() }, [])
+
   // Auto-dismiss error after 4s
   useEffect(() => {
     if (!refineError) return
@@ -163,7 +167,13 @@ function LookPageContent() {
           if (event.type === 'status') {
             setRefineStatus(event.message)
 
-          } else if (event.type === 'done' && event.result) {
+          } else if (event.type === 'done') {
+            if (!event.result) {
+              setRefineError("Couldn't update the look — try again")
+              setRefining(false)
+              setRefineStatus(null)
+              return
+            }
             const refined = event.result as Outfit
             setSession(prev => {
               if (!prev) return prev
@@ -173,6 +183,7 @@ function LookPageContent() {
               return next
             })
             setIndices(refined.items.map(() => 0))
+            setRefineCount(c => c + 1)
             setRefining(false)
             setRefineStatus(null)
 
@@ -416,10 +427,10 @@ function LookPageContent() {
                 ))}
               </div>
             ) : (
-              <div key={`items-${idx}`} className="flex flex-col gap-4">
+              <div key={`items-${idx}-${refineCount}`} className="flex flex-col gap-4">
                 {activeOutfit.items.map((item, i) => (
                   <ItemCard
-                    key={`${idx}-${i}`}
+                    key={`${idx}-${i}-${refineCount}`}
                     item={item}
                     idx={indices[i] ?? 0}
                     onIdxChange={newIdx => setItemIdx(i, newIdx)}
@@ -431,7 +442,8 @@ function LookPageContent() {
 
             {/* ── Refinement chips (always in-flow) ─────────────────── */}
             {session.refinements.length > 0 && !refining && (
-              <div className="border-t border-black/[0.06] pt-6 mt-6"
+              <div key={`chips-${refineCount}`}
+                   className="border-t border-black/[0.06] pt-6 mt-6"
                    style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
                 <div className="flex flex-wrap gap-2">
                   {session.refinements.map((chip, i) => (
