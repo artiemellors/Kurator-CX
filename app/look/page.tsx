@@ -4,6 +4,31 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { loadLookSession, type LookSession } from '@/lib/look-session'
+import { KmartProductCard, type CollectionProduct } from '@/app/components/ProductCollections'
+import type { OutfitItem } from '@/app/components/OutfitResults'
+
+/** Maps an OutfitItem's first alternative to the CollectionProduct shape KmartProductCard expects */
+function toCollectionProduct(item: OutfitItem): CollectionProduct | null {
+  const p = item.alternatives[0]
+  if (!p) return null
+  return { name: p.name, price: p.price, colour: p.colour, productUrl: p.productUrl, imageUrl: p.imageUrl }
+}
+
+/** One outfit slot: category label + product card. Slice 4 will add the swap affordance here. */
+function SlotCard({ item, animDelay }: { item: OutfitItem; animDelay: number }) {
+  const product = toCollectionProduct(item)
+  if (!product) return null
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Category label */}
+      <p className="text-[10px] font-semibold tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)]">
+        {item.category}
+      </p>
+      <KmartProductCard p={product} animDelay={animDelay} />
+    </div>
+  )
+}
 
 function LookPageContent() {
   const searchParams = useSearchParams()
@@ -125,11 +150,12 @@ function LookPageContent() {
           )}
         </div>
 
-        {/* ── Product grid — Slice 3 ──────────────────────────────── */}
-        <section className="pt-8 pb-8 border-b border-black/[0.06]">
-          <div className="rounded-[12px] border border-black/[0.06] bg-white p-8
-                          text-center text-[rgba(26,26,26,0.25)] text-sm">
-            Product grid — Slice 3
+        {/* ── Product grid ───────────────────────────────────────── */}
+        <section key={`grid-${idx}`} className="pt-8 pb-8 border-b border-black/[0.06]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-6">
+            {activeOutfit.items.map((item, i) => (
+              <SlotCard key={`${idx}-${i}`} item={item} animDelay={i * 60} />
+            ))}
           </div>
         </section>
 
