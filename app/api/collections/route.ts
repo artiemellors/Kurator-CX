@@ -1,22 +1,6 @@
 import { NextRequest } from 'next/server'
-import { GoogleGenAI, Type, FunctionCallingConfigMode, type FunctionDeclaration } from '@google/genai'
 import { searchKmart, browseCollection, fetchCollections, Product } from '@/lib/kmart-scraper'
-
-async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      return await fn()
-    } catch (err) {
-      const status = (err as { status?: number }).status
-      const retryable = status === 429 || status === 503
-      if (!retryable || attempt === maxAttempts) throw err
-      const delay = Math.pow(2, attempt) * 1000
-      console.log(`[Collections] ${status} — retry ${attempt}/${maxAttempts - 1} in ${delay / 1000}s…`)
-      await new Promise(r => setTimeout(r, delay))
-    }
-  }
-  throw new Error('unreachable')
-}
+import { runAgentLoop } from '@/lib/llm-agent'
 
 const SYSTEM_PROMPT = `You are a Kmart Australia fashion editor creating outfit-based shoppable edits.
 
@@ -49,142 +33,106 @@ export async function POST(req: NextRequest) {
     ? `\n\nAvailable Kmart collections you can browse:\n${availableCollections.map(c => `  ${c.id} → ${c.display_name}`).join('\n')}`
     : ''
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
+  try {
+    const productMap = new Map<string, Product>()
+    let searchIndex = 0
 
-  const functionDeclarations: FunctionDeclaration[] = [
-    {
-      name: 'search_kmart',
-      description: 'Search Kmart Australia for products. Returns up to 10 products.',
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          query: { type: Type.STRING },
+    const result = await runAgentLoop({
+      system: SYSTEM_PROMPT,
+      userMessage: `Create 3 themed product collections for: "${query}"${collectionContext}`,
+      maxTokens: 4096,
+      maxTurns: 12,
+      tools: [
+        {
+          name: 'search_kmart',
+          description: 'Search Kmart Australia for products. Returns up to 10 products.',
+          parameters: {
+            type: 'object',
+            properties: { query: { type: 'string' } },
+            required: ['query'],
+          },
         },
-        required: ['query'],
-      },
-    },
-    {
-      name: 'browse_collection',
-      description: 'Browse a Kmart collection by its id.',
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          collection_id: { type: Type.STRING },
+        {
+          name: 'browse_collection',
+          description: 'Browse a Kmart collection by its id.',
+          parameters: {
+            type: 'object',
+            properties: { collection_id: { type: 'string' } },
+            required: ['collection_id'],
+          },
         },
-        required: ['collection_id'],
-      },
-    },
-    {
-      name: 'present_collections',
-      description: 'Present the final themed collections. Call once all searches are done.',
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          collections: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING, description: 'Short editorial collection name' },
-                product_ids: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING },
-                  description: 'Product ids ordered by colour story + outfit adjacency: neutrals/whites first, then earth tones, then mid-tones, then accents. Within each colour group, items worn together appear adjacent.',
+        {
+          name: 'present_collections',
+          description: 'Present the final themed collections. Call once all searches are done.',
+          parameters: {
+            type: 'object',
+            properties: {
+              collections: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Short editorial collection name' },
+                    product_ids: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      description: 'Product ids ordered by colour story + outfit adjacency: neutrals/whites first, then earth tones, then mid-tones, then accents. Within each colour group, items worn together appear adjacent.',
+                    },
+                  },
+                  required: ['name', 'product_ids'],
                 },
               },
-              required: ['name', 'product_ids'],
             },
+            required: ['collections'],
           },
         },
-        required: ['collections'],
+      ],
+      terminalTool: 'present_collections',
+      onTool: async (calls) => {
+        const fetched = await Promise.all(
+          calls.map(c =>
+            c.name === 'search_kmart'
+              ? searchKmart((c.args as { query: string }).query)
+              : browseCollection((c.args as { collection_id: string }).collection_id)
+          )
+        )
+        return calls.map((c, i) => {
+          const products = fetched[i].slice(0, 10)
+          const si = searchIndex++
+          const tagged = products.map((p, pi) => {
+            const id = `q${si}p${pi}`
+            productMap.set(id, p)
+            return { id, name: p.name, price: p.price, ...(p.colour ? { colour: p.colour } : {}) }
+          })
+          return {
+            id: c.id,
+            name: c.name,
+            result: tagged.length > 0 ? JSON.stringify(tagged) : 'No results found.',
+          }
+        })
       },
-    },
-  ]
-  const tools = [{ functionDeclarations }]
-
-  const productMap = new Map<string, Product>()
-  const contents: object[] = [{
-    role: 'user',
-    parts: [{ text: `Create 3 themed product collections for: "${query}"${collectionContext}` }],
-  }]
-
-  let searchIndex = 0
-
-  for (let turn = 0; turn < 12; turn++) {
-    const response = await withRetry(() => ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite-preview',
-      contents,
-      config: {
-        maxOutputTokens: 4096,
-        systemInstruction: SYSTEM_PROMPT,
-        tools,
-        toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY } },
-      },
-    }))
-
-    const functionCalls = response.functionCalls ?? []
-    console.log(`[Collections] Turn ${turn + 1} — ${functionCalls.length} function call(s)`)
-
-    if (response.candidates?.[0]?.content) {
-      contents.push(response.candidates[0].content)
-    }
-
-    if (functionCalls.length === 0) break
-
-    const presentCall = functionCalls.find(c => c.name === 'present_collections')
-    if (presentCall) {
-      const raw = (presentCall.args as {
-        collections: Array<{ name: string; product_ids: string[] }>
-      }).collections
-
-      const collections = raw
-        .map(col => ({
-          name: col.name,
-          products: col.product_ids
-            .map(id => productMap.get(id))
-            .filter((p): p is Product => p !== undefined),
-        }))
-        .filter(col => col.products.length > 0)
-
-      console.log(`[Collections] Done — ${collections.length} collections, ${collections.reduce((n, c) => n + c.products.length, 0)} products total`)
-      return Response.json({ collections })
-    }
-
-    const fetchCalls = functionCalls.filter(
-      c => c.name === 'search_kmart' || c.name === 'browse_collection'
-    )
-
-    const results = await Promise.all(
-      fetchCalls.map(c =>
-        c.name === 'search_kmart'
-          ? searchKmart((c.args as { query: string }).query)
-          : browseCollection((c.args as { collection_id: string }).collection_id)
-      )
-    )
-
-    const functionResponses = fetchCalls.map((c, i) => {
-      const products = results[i].slice(0, 10)
-      const si = searchIndex++
-      const tagged = products.map((p, pi) => {
-        const id = `q${si}p${pi}`
-        productMap.set(id, p)
-        return { id, name: p.name, price: p.price, ...(p.colour ? { colour: p.colour } : {}) }
-      })
-      return {
-        functionResponse: {
-          name: c.name,
-          id: c.id,
-          response: {
-            result: tagged.length > 0
-              ? JSON.stringify(tagged)
-              : 'No results found.',
-          },
-        },
-      }
     })
 
-    contents.push({ role: 'user', parts: functionResponses })
-  }
+    if (!result) return Response.json({ collections: [] })
 
-  return Response.json({ collections: [] })
+    const raw = (result.args as {
+      collections: Array<{ name: string; product_ids: string[] }>
+    }).collections
+
+    const collections = raw
+      .map(col => ({
+        name: col.name,
+        products: col.product_ids
+          .map(id => productMap.get(id))
+          .filter((p): p is Product => p !== undefined),
+      }))
+      .filter(col => col.products.length > 0)
+
+    console.log(`[Collections] Done — ${collections.length} collections, ${collections.reduce((n, c) => n + c.products.length, 0)} products total`)
+    return Response.json({ collections })
+
+  } catch (err) {
+    console.error('[Collections] Route error:', err)
+    return Response.json({ collections: [] })
+  }
 }
