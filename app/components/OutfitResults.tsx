@@ -38,7 +38,7 @@ function KmartPrice({ price, className = '' }: { price: string; className?: stri
   )
 }
 
-function ItemCard({
+export function ItemCard({
   item,
   idx,
   onIdxChange,
