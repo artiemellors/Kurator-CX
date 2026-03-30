@@ -36,9 +36,12 @@ function SkeletonTile({ statusText }: { statusText?: string }) {
         <div className="skeleton h-3 w-24 rounded" />
         <div className="skeleton h-3 w-32 rounded" />
       </div>
-      <div className="flex gap-2 sm:gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="shrink-0 w-[68px] h-[68px] sm:w-20 sm:h-20 skeleton rounded-full" />
+      <div className="flex justify-center items-center py-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i}
+               className={`shrink-0 skeleton rounded-full
+                           w-[122px] h-[122px] sm:w-[150px] sm:h-[150px] xl:w-[210px] xl:h-[210px]
+                           ${i > 0 ? '-ml-8 sm:-ml-10' : ''}`} />
         ))}
       </div>
       {/* Progress bar in place of the CTA — contextually tied to the tile loading */}
