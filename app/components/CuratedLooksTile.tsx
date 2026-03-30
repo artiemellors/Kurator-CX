@@ -101,6 +101,13 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
         <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
       </div>
 
+      {/* Outfit description */}
+      {activeOutfit.description && (
+        <p className="px-5 shrink-0 text-[13px] text-[rgba(26,26,26,0.5)] leading-relaxed line-clamp-3">
+          {activeOutfit.description}
+        </p>
+      )}
+
       {/* Gallery
           - overflow-x-auto forces overflow-y:auto (CSS coercion) — py-4 keeps bobbing
             circles (max 7px amp) within the container so they aren't clipped
@@ -140,13 +147,6 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
           ))}
         </div>
       </div>
-
-      {/* Outfit description — fills vertical space on larger tiles */}
-      {activeOutfit.description && (
-        <p className="px-5 shrink-0 text-[13px] text-[rgba(26,26,26,0.5)] leading-relaxed line-clamp-3">
-          {activeOutfit.description}
-        </p>
-      )}
 
       {/* Secondary CTA */}
       <div className="px-5 shrink-0">
