@@ -169,10 +169,10 @@ export function ProductCollections({
       {/* ProductCollections — product grid */}
       <div
         id="ProductCollections-grid"
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-6"
+        className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6"
       >
         {isLoading ? (
-          Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+          Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)
         ) : activeCollection ? (
           activeCollection.products.map((p, i) => (
             <KmartProductCard

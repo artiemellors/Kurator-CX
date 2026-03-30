@@ -25,6 +25,7 @@ function LookPageContent() {
   const [refineStatus, setRefineStatus] = useState<string | null>(null)
   const [refineError, setRefineError]   = useState<string | null>(null)
   const [refineCount, setRefineCount]   = useState(0)
+  const [heroSlot, setHeroSlot]         = useState(0)
   const tabsRef        = useRef<HTMLDivElement>(null)
   const refineAbortRef = useRef<AbortController | null>(null)
   const phraseIdxRef  = useRef(0)
@@ -97,6 +98,7 @@ function LookPageContent() {
 
   useEffect(() => {
     if (activeOutfit) setIndices(activeOutfit.items.map(() => 0))
+    setHeroSlot(0)
   }, [idx, activeOutfit])
 
   useEffect(() => {
@@ -221,10 +223,13 @@ function LookPageContent() {
     }
   }
 
-  const heroItem   = activeOutfit.items[0]
-  const heroImage  = heroItem?.alternatives[indices[0] ?? 0]?.imageUrl
+  const heroItem   = activeOutfit.items[heroSlot]
+  const heroImage  = heroItem?.alternatives[indices[heroSlot] ?? 0]?.imageUrl
                   ?? heroItem?.alternatives[0]?.imageUrl
-  const stripItems = activeOutfit.items.slice(1)
+  // Strip: all items except the current hero, carrying their original index for indices lookup
+  const stripItems = activeOutfit.items
+    .map((item, i) => ({ item, originalIdx: i }))
+    .filter(({ originalIdx }) => originalIdx !== heroSlot)
 
   return (
     <div className="min-h-screen bg-[--bg]">
@@ -275,24 +280,28 @@ function LookPageContent() {
               {/* Thumbnail strip — LEFT, proportional 4:5 images */}
               {stripItems.length > 0 && (
                 <div className="flex-1 flex flex-col gap-2 min-w-0">
-                  {stripItems.map((item, i) => {
-                    const altIdx = indices[i + 1] ?? 0
+                  {stripItems.map(({ item, originalIdx }) => {
+                    const altIdx = indices[originalIdx] ?? 0
                     const img    = item.alternatives[altIdx]?.imageUrl
                                 ?? item.alternatives[0]?.imageUrl
                     return (
-                      <div key={i}
-                           className={`flex-1 min-h-0 rounded-lg overflow-hidden bg-[#F4F5F6]
-                                       ${refining ? 'skeleton' : ''}`}>
+                      <button
+                        key={originalIdx}
+                        onClick={() => setHeroSlot(originalIdx)}
+                        className={`flex-1 min-h-0 rounded-lg overflow-hidden bg-[#F4F5F6]
+                                    ring-2 ring-transparent hover:ring-[#1768b0]/30
+                                    transition-all duration-150
+                                    ${refining ? 'skeleton' : ''}`}>
                         {!refining && img && (
                           <img
-                            key={`strip-${i}-${altIdx}`}
+                            key={`strip-${originalIdx}-${altIdx}`}
                             src={img}
                             alt={item.alternatives[0]?.name}
                             className="w-full h-full object-cover"
                             style={{ animation: 'imgFadeIn 220ms ease-out' }}
                           />
                         )}
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
@@ -303,7 +312,7 @@ function LookPageContent() {
                                ${refining ? 'skeleton' : ''}`}>
                 {!refining && heroImage && (
                   <img
-                    key={`hero-${indices[0]}`}
+                    key={`hero-${heroSlot}-${indices[heroSlot]}`}
                     src={heroImage}
                     alt={heroItem?.alternatives[0]?.name}
                     className="w-full h-full object-cover"
@@ -319,7 +328,7 @@ function LookPageContent() {
               <div className={`aspect-[4/5] bg-[#F4F5F6] ${refining ? 'skeleton' : ''}`}>
                 {!refining && heroImage && (
                   <img
-                    key={`m-hero-${indices[0]}`}
+                    key={`m-hero-${heroSlot}-${indices[heroSlot]}`}
                     src={heroImage}
                     alt={heroItem?.alternatives[0]?.name}
                     className="w-full h-full object-cover"
@@ -329,24 +338,27 @@ function LookPageContent() {
               </div>
               {stripItems.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide pt-2 px-4 sm:px-8">
-                  {stripItems.map((item, i) => {
-                    const altIdx = indices[i + 1] ?? 0
+                  {stripItems.map(({ item, originalIdx }) => {
+                    const altIdx = indices[originalIdx] ?? 0
                     const img    = item.alternatives[altIdx]?.imageUrl
                                 ?? item.alternatives[0]?.imageUrl
                     return (
-                      <div key={i}
-                           className={`w-[28vw] min-w-[88px] max-w-[130px] aspect-[4/5]
-                                       shrink-0 rounded-lg overflow-hidden bg-[#F4F5F6]
-                                       ${refining ? 'skeleton' : ''}`}>
+                      <button
+                        key={originalIdx}
+                        onClick={() => setHeroSlot(originalIdx)}
+                        className={`w-[28vw] min-w-[88px] max-w-[130px] aspect-[4/5]
+                                    shrink-0 rounded-lg overflow-hidden bg-[#F4F5F6]
+                                    ring-2 ring-transparent active:ring-[#1768b0]/30
+                                    ${refining ? 'skeleton' : ''}`}>
                         {!refining && img && (
                           <img
-                            key={`m-strip-${i}-${altIdx}`}
+                            key={`m-strip-${originalIdx}-${altIdx}`}
                             src={img}
                             alt={item.alternatives[0]?.name}
                             className="w-full h-full object-cover"
                           />
                         )}
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
