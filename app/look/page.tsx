@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { loadLookSession, type LookSession } from '@/lib/look-session'
-import { ItemCard } from '@/app/components/OutfitResults'
+import { loadLookSession, saveLookSession, type LookSession } from '@/lib/look-session'
+import { ItemCard, type Outfit } from '@/app/components/OutfitResults'
 import { ProductCollections, type ProductCollection } from '@/app/components/ProductCollections'
 
 function LookPageContent() {
@@ -20,8 +20,12 @@ function LookPageContent() {
   const [refineQuery, setRefineQuery]   = useState('')
   const [inputFocused, setInputFocused] = useState(false)
   const [typedText, setTypedText]       = useState('')
-  const [collections, setCollections] = useState<ProductCollection[] | null>(null)
-  const tabsRef     = useRef<HTMLDivElement>(null)
+  const [collections, setCollections]   = useState<ProductCollection[] | null>(null)
+  const [refining, setRefining]         = useState(false)
+  const [refineStatus, setRefineStatus] = useState<string | null>(null)
+  const [refineError, setRefineError]   = useState<string | null>(null)
+  const tabsRef       = useRef<HTMLDivElement>(null)
+  const refineAbortRef = useRef<AbortController | null>(null)
   const phraseIdxRef  = useRef(0)
   const charIdxRef    = useRef(0)
   const isDeletingRef = useRef(false)
@@ -101,6 +105,13 @@ function LookPageContent() {
     tab?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' })
   }, [idx])
 
+  // Auto-dismiss error after 4s
+  useEffect(() => {
+    if (!refineError) return
+    const t = setTimeout(() => setRefineError(null), 4000)
+    return () => clearTimeout(t)
+  }, [refineError])
+
   if (!ready || !session || !activeOutfit) return null
 
   function switchOutfit(i: number) {
@@ -111,10 +122,81 @@ function LookPageContent() {
     setIndices(prev => prev.map((v, i) => i === itemIdx ? altIdx : v))
   }
 
-  function handleRefine(refinedQ: string) {
+  async function handleRefine(refinedQ: string) {
     const trimmed = refinedQ.trim()
-    if (!trimmed) return
-    router.push(`/search?q=${encodeURIComponent(trimmed)}`)
+    if (!trimmed || refining) return
+
+    // Cancel any in-flight refinement
+    refineAbortRef.current?.abort()
+    const controller = new AbortController()
+    refineAbortRef.current = controller
+
+    setRefining(true)
+    setRefineStatus(null)
+    setRefineError(null)
+    setRefineQuery('')
+
+    try {
+      const res = await fetch('/api/refine', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ refinement: trimmed, outfit: activeOutfit, originalQuery: q }),
+        signal:  controller.signal,
+      })
+
+      const reader  = res.body!.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          if (controller.signal.aborted) return
+          const event = JSON.parse(line.slice(6))
+
+          if (event.type === 'status') {
+            setRefineStatus(event.message)
+
+          } else if (event.type === 'done' && event.result) {
+            const refined = event.result as Outfit
+            setSession(prev => {
+              if (!prev) return prev
+              const newOutfits = prev.outfits.map((o, i) => i === idx ? refined : o)
+              const next = { ...prev, outfits: newOutfits }
+              saveLookSession(next)
+              return next
+            })
+            setIndices(refined.items.map(() => 0))
+            setRefining(false)
+            setRefineStatus(null)
+
+          } else if (event.type === 'refinements') {
+            setSession(prev => {
+              if (!prev) return prev
+              const next = { ...prev, refinements: event.result as string[] }
+              saveLookSession(next)
+              return next
+            })
+
+          } else if (event.type === 'error') {
+            setRefineError("Couldn't update the look — try again")
+            setRefining(false)
+            setRefineStatus(null)
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return
+      setRefineError("Couldn't update the look — try again")
+      setRefining(false)
+      setRefineStatus(null)
+    }
   }
 
   const heroItem   = activeOutfit.items[0]
@@ -318,7 +400,7 @@ function LookPageContent() {
             </div>
 
             {/* ── Refinement chips (always in-flow) ─────────────────── */}
-            {session.refinements.length > 0 && (
+            {session.refinements.length > 0 && !refining && (
               <div className="border-t border-black/[0.06] pt-6 mt-6"
                    style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
                 <div className="flex flex-wrap gap-2">
@@ -356,25 +438,37 @@ function LookPageContent() {
            style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
         {/* On desktop we want the input inside the right column — constrain width */}
         <div className="lg:max-w-[440px] lg:ml-auto lg:pr-0 lg:pb-8 lg:pt-6 lg:border-t lg:border-black/[0.06]">
+          {/* Error message */}
+          {refineError && (
+            <p className="text-[12px] text-red-500 mb-2 px-1">{refineError}</p>
+          )}
           <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
-            <div className="flex items-center gap-3 bg-white rounded-full
-                            border border-black/[0.12]
-                            focus-within:border-[#1768b0]/50
-                            focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.06)]
-                            transition-all duration-200 px-5 py-3.5">
-              <i className="fa-solid fa-wand-magic-sparkles text-[13px] text-black/25 shrink-0" />
+            <div className={`flex items-center gap-3 bg-white rounded-full
+                            border transition-all duration-200 px-5 py-3.5
+                            ${refining
+                              ? 'border-black/[0.08]'
+                              : 'border-black/[0.12] focus-within:border-[#1768b0]/50 focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.06)]'
+                            }`}>
+              <i className={`text-[13px] text-black/25 shrink-0 fa-solid
+                             ${refining ? 'fa-spinner animate-spin' : 'fa-wand-magic-sparkles'}`} />
               <input
                 value={refineQuery}
                 onChange={e => setRefineQuery(e.target.value)}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                placeholder={(!inputFocused && !refineQuery) ? typedText : 'What would you change?'}
+                disabled={refining}
+                placeholder={
+                  refining
+                    ? (refineStatus ?? 'Updating look…')
+                    : (!inputFocused && !refineQuery) ? typedText : 'What would you change?'
+                }
                 className="flex-1 min-w-0 bg-transparent outline-none text-[14px]
-                           text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]"
+                           text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]
+                           disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
-                disabled={!refineQuery.trim()}
+                disabled={!refineQuery.trim() || refining}
                 className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
                            bg-[#1768b0] text-white
                            disabled:opacity-40
