@@ -127,7 +127,7 @@ export function ProductCollections({ collections }: { collections: ProductCollec
 
   return (
     <div className="w-full bg-white border-t border-black/[0.06]">
-    <div id="ProductCollections" className="max-w-4xl mx-auto px-4 sm:px-8 pb-16">
+    <div id="ProductCollections" className="max-w-[1600px] mx-auto px-4 sm:px-8 pb-16">
 
       {/* Section heading */}
       <p className="text-2xl font-bold text-[#1a1a1a] mt-8 mb-5">Shop the edit</p>

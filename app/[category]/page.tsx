@@ -277,7 +277,7 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
         className="sticky top-0 z-20 bg-white border-b border-black/[0.06]"
         style={{ animation: 'fadeDown 0.6s ease both' }}
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-8 h-20 flex items-center gap-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-20 flex items-center gap-6">
           {/* Logo */}
           <a href="/outfits" className="flex items-center shrink-0">
             <Image src="/Logo.svg" alt="Kmart" width={130} height={41} priority />
@@ -362,7 +362,7 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
 
       {/* Hero + search */}
       <section
-        className="max-w-4xl mx-auto px-4 sm:px-8 pt-14 pb-10"
+        className="max-w-[1600px] mx-auto px-4 sm:px-8 pt-14 pb-10"
         style={{ animation: 'fadeUp 0.7s 0.1s ease both' }}
       >
         <div className="flex items-center gap-2.5 mb-4">

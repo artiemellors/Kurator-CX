@@ -32,7 +32,7 @@ export default function Home() {
         className="sticky top-0 z-20 bg-white border-b border-black/[0.06]"
         style={{ animation: 'fadeDown 0.6s ease both' }}
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-8 h-20 flex items-center">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-20 flex items-center">
           <Image src="/Logo.svg" alt="Kmart" width={130} height={41} priority />
         </div>
       </header>

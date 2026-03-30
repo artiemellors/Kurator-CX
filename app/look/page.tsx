@@ -69,7 +69,7 @@ function LookPageContent() {
       {/* ── Nav: logo right ──────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white border-b border-black/[0.06]"
               style={{ animation: 'fadeDown 0.4s ease both' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center justify-end">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-14 flex items-center justify-end">
           <a href="/">
             <Image src="/Logo.svg" alt="Kmart" width={80} height={26} priority />
           </a>
@@ -77,7 +77,7 @@ function LookPageContent() {
       </header>
 
       {/* ── Main: PDP 2-col on desktop, stacked on mobile ────────── */}
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-[1600px] mx-auto">
         <div className="lg:grid lg:grid-cols-[1fr_440px] lg:gap-10 lg:px-8">
 
           {/* ══ LEFT: image gallery ══════════════════════════════════ */}

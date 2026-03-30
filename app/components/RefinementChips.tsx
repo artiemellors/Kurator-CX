@@ -44,7 +44,7 @@ export default function RefinementChips({ chips, onRefine }: Props) {
 
   return (
     <div
-      className="max-w-4xl mx-auto px-4 sm:px-8 pb-4"
+      className="max-w-[1600px] mx-auto px-4 sm:px-8 pb-4"
       style={{ animation: 'fadeUp 0.3s ease both' }}
     >
       <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[--text-subtle] mb-2.5">

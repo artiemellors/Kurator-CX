@@ -274,7 +274,7 @@ export default function OutfitResults({
   const [activeIdx, setActiveIdx] = useState(0)
 
   return (
-    <div id="OutfitResults" className="max-w-4xl mx-auto px-4 sm:px-8 pb-16" style={{ animation: 'fadeUp 0.5s ease both' }}>
+    <div id="OutfitResults" className="max-w-[1600px] mx-auto px-4 sm:px-8 pb-16" style={{ animation: 'fadeUp 0.5s ease both' }}>
       {/* OutfitResults — sticky outfit tab bar */}
       <div id="OutfitResults-tabbar" className={`sticky top-20 z-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-5 mb-6
         bg-white`}>
