@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export interface CollectionProduct {
   name: string
@@ -32,18 +32,39 @@ function SkeletonCard() {
 export function KmartProductCard({ p, animDelay }: { p: CollectionProduct; animDelay: number }) {
   const hasAlt = !!p.altImageUrl
   const [showAlt, setShowAlt] = useState(false)
+  const cardRef = useRef<HTMLAnchorElement>(null)
+  // Stable random delay per card (150–550ms) so cards in the same row don't flip together
+  const delayRef = useRef(Math.floor(Math.random() * 400) + 150)
 
   useEffect(() => {
     if (!hasAlt) return
-    // Auto-cycle on touch/mobile devices (no hover support)
-    if (!window.matchMedia('(hover: hover)').matches) {
-      const id = setInterval(() => setShowAlt(v => !v), 2500)
-      return () => clearInterval(id)
+    // Desktop: hover handles it
+    if (window.matchMedia('(hover: hover)').matches) return
+
+    const el = cardRef.current
+    if (!el) return
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    // Flip when card scrolls into view; revert when it leaves — scroll-driven, not timer-driven
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        timer = setTimeout(() => setShowAlt(true), delayRef.current)
+      } else {
+        if (timer) { clearTimeout(timer); timer = null }
+        setShowAlt(false)
+      }
+    }, { threshold: 0.25 })
+
+    observer.observe(el)
+    return () => {
+      observer.disconnect()
+      if (timer) clearTimeout(timer)
     }
   }, [hasAlt])
 
   return (
     <a
+      ref={cardRef}
       href={p.productUrl ?? '#'}
       target="_blank"
       rel="noopener noreferrer"
