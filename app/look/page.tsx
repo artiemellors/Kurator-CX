@@ -472,22 +472,25 @@ function LookPageContent() {
 
             {/* ── Refinement input — fixed on mobile, in-flow on desktop ── */}
             <div className="fixed bottom-0 left-0 right-0 z-20
-                            bg-white border-t border-black/[0.06]
-                            px-4 pt-3 pb-8
+                            bg-white/75 backdrop-blur-xl
+                            shadow-[0_-1px_0_0_rgba(0,0,0,0.05)]
+                            px-4 pt-2.5 pb-10
                             lg:static lg:bottom-auto lg:left-auto lg:right-auto lg:z-auto
-                            lg:bg-transparent lg:border-t lg:border-black/[0.06]
+                            lg:bg-transparent lg:backdrop-blur-none lg:shadow-none
+                            lg:border-t lg:border-black/[0.06]
                             lg:px-0 lg:pt-6 lg:pb-8 lg:mt-6">
               {refineError && (
                 <p className="text-[12px] text-red-500 mb-2 px-1">{refineError}</p>
               )}
               <form onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}>
-                <div className={`flex items-center gap-3 bg-white rounded-full
-                                border transition-all duration-200 px-5 py-3.5
+                <div className={`flex items-center gap-2.5 bg-white rounded-full
+                                border transition-all duration-200
+                                px-4 py-2.5 lg:px-5 lg:py-3.5
                                 ${refining
                                   ? 'border-black/[0.08]'
                                   : 'border-black/[0.12] focus-within:border-[#1768b0]/50 focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.06)]'
                                 }`}>
-                  <i className={`text-[13px] text-black/25 shrink-0 fa-solid
+                  <i className={`text-[12px] lg:text-[13px] text-black/25 shrink-0 fa-solid
                                  ${refining ? 'fa-spinner animate-spin' : 'fa-wand-magic-sparkles'}`} />
                   <input
                     value={refineQuery}
@@ -500,7 +503,8 @@ function LookPageContent() {
                         ? (refineStatus ?? 'Updating look…')
                         : (!inputFocused && !refineQuery) ? typedText : 'What would you change?'
                     }
-                    className="flex-1 min-w-0 bg-transparent outline-none text-[14px]
+                    className="flex-1 min-w-0 bg-transparent outline-none
+                               text-[13px] lg:text-[14px]
                                text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.38)]
                                disabled:cursor-not-allowed"
                   />
@@ -512,21 +516,23 @@ function LookPageContent() {
                         setRefining(false)
                         setRefineStatus(null)
                       }}
-                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                      className="shrink-0 w-7 h-7 lg:w-8 lg:h-8 rounded-full
+                                 flex items-center justify-center
                                  border border-black/[0.12] text-black/40
                                  hover:border-black/25 hover:text-black/60
                                  transition-all duration-200"
                     >
-                      <i className="fa-solid fa-xmark text-[12px]" />
+                      <i className="fa-solid fa-xmark text-[11px] lg:text-[12px]" />
                     </button>
                   ) : (
                     <button
                       type="submit"
                       disabled={!refineQuery.trim()}
-                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                      className="shrink-0 w-7 h-7 lg:w-8 lg:h-8 rounded-full
+                                 flex items-center justify-center
                                  bg-[#1768b0] text-white transition-opacity duration-200"
                     >
-                      <i className="fa-solid fa-arrow-up text-[12px]" />
+                      <i className="fa-solid fa-arrow-up text-[11px] lg:text-[12px]" />
                     </button>
                   )}
                 </div>
