@@ -112,7 +112,13 @@ export function KmartProductCard({ p, animDelay }: { p: CollectionProduct; animD
   )
 }
 
-export function ProductCollections({ collections }: { collections: ProductCollection[] | null }) {
+export function ProductCollections({
+  collections,
+  stickyTop = 'top-20',
+}: {
+  collections: ProductCollection[] | null
+  stickyTop?: string
+}) {
   const [activeTab, setActiveTab] = useState(0)
   const isLoading = collections === null
 
@@ -133,7 +139,7 @@ export function ProductCollections({ collections }: { collections: ProductCollec
       <p className="text-2xl font-bold text-[#1a1a1a] mt-8 mb-5">Shop the edit</p>
 
       {/* ProductCollections — sticky collection tab bar */}
-      <div id="ProductCollections-tabbar" className="sticky top-20 z-10 bg-white -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 mb-6">
+      <div id="ProductCollections-tabbar" className={`sticky ${stickyTop} z-10 bg-white -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 mb-6`}>
         <div className="flex gap-0 overflow-x-auto scrollbar-hide border-b border-black/[0.08]">
           {isLoading ? (
             <>
