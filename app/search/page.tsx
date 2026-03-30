@@ -98,10 +98,12 @@ function SearchResults() {
     })
       .then(r => r.json())
       .then(({ products: raw }: { products: CollectionProduct[] }) => {
+        if (controller.signal.aborted) return
         setProducts(raw)
         setProductsLoading(false)
       })
       .catch(err => {
+        if (controller.signal.aborted) return
         if ((err as Error).name !== 'AbortError') setError(String(err))
         setProductsLoading(false)
       })
@@ -143,9 +145,10 @@ function SearchResults() {
         }
       }
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') setError(String(err))
+      if (!signal.aborted && (err as Error).name !== 'AbortError') setError(String(err))
     } finally {
-      setBundleLoading(false)
+      // Guard against a stale aborted fetch overwriting a newer search's loading state
+      if (!signal.aborted) setBundleLoading(false)
     }
   }
 
@@ -159,18 +162,20 @@ function SearchResults() {
     setTimeout(() => outfitsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
   }
 
-  // Build grid: products with tile slot always reserved at TILE_INSERT_POSITION
+  // Only reserve a tile slot if the bundle is loading or succeeded
+  const showTileSlot = bundleLoading || !!outfits
   const insertPos = Math.min(TILE_INSERT_POSITION, products?.length ?? 0)
-  const gridItems: GridItem[] = products
+  const gridItems: GridItem[] = (products && products.length > 0)
     ? [
-        ...products.slice(0, insertPos).map(p => ({ type: 'product' as const, data: p })),
-        { type: 'tile' as const },
-        ...products.slice(insertPos).map(p => ({ type: 'product' as const, data: p })),
+        ...products.slice(0, showTileSlot ? insertPos : products.length).map(p => ({ type: 'product' as const, data: p })),
+        ...(showTileSlot ? [{ type: 'tile' as const }] : []),
+        ...(showTileSlot ? products.slice(insertPos).map(p => ({ type: 'product' as const, data: p })) : []),
       ]
     : []
 
-  const showSkeletons = productsLoading
-  const showGrid      = products !== null
+  const showSkeletons  = productsLoading
+  const showGrid       = products !== null
+  const showNoResults  = !productsLoading && products !== null && products.length === 0
 
   return (
     <div className="min-h-screen bg-[--bg]">
@@ -228,11 +233,16 @@ function SearchResults() {
               {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={`post-${i}`} />)}
             </>
           )}
+          {showNoResults && (
+            <div className="col-span-2 sm:col-span-4 py-16 text-center text-[rgba(26,26,26,0.4)] text-sm">
+              No results found for &ldquo;{q}&rdquo; — try a different search
+            </div>
+          )}
           {showGrid && gridItems.map((item, i) => {
             if (item.type === 'tile') {
-              return outfits
-                ? <CuratedLooksTile key="tile" outfits={outfits} onExplore={handleExplore} />
-                : <SkeletonTile key="tile" statusText={statuses[statuses.length - 1]} />
+              if (outfits) return <CuratedLooksTile key="tile" outfits={outfits} onExplore={handleExplore} />
+              if (bundleLoading) return <SkeletonTile key="tile" statusText={statuses[statuses.length - 1]} />
+              return null  // bundle finished but failed — don't leave a skeleton permanently
             }
             return (
               <KmartProductCard
