@@ -259,8 +259,9 @@ function LookPageContent() {
                                 ?? item.alternatives[0]?.imageUrl
                     return (
                       <div key={i}
-                           className="flex-1 min-h-0 rounded-lg overflow-hidden bg-[#F4F5F6]">
-                        {img && (
+                           className={`flex-1 min-h-0 rounded-lg overflow-hidden bg-[#F4F5F6]
+                                       ${refining ? 'skeleton' : ''}`}>
+                        {!refining && img && (
                           <img
                             key={`strip-${i}-${altIdx}`}
                             src={img}
@@ -276,8 +277,9 @@ function LookPageContent() {
               )}
 
               {/* Hero — RIGHT, takes remaining width */}
-              <div className="flex-[2] min-h-0 rounded-xl overflow-hidden bg-[#F4F5F6]">
-                {heroImage && (
+              <div className={`flex-[2] min-h-0 rounded-xl overflow-hidden bg-[#F4F5F6]
+                               ${refining ? 'skeleton' : ''}`}>
+                {!refining && heroImage && (
                   <img
                     key={`hero-${indices[0]}`}
                     src={heroImage}
@@ -292,8 +294,8 @@ function LookPageContent() {
             {/* Mobile: full-bleed hero + horizontal thumbnail strip */}
             <div className="lg:hidden" key={`mobile-hero-${idx}`}
                  style={{ animation: 'fadeUp 0.4s ease both' }}>
-              <div className="aspect-[4/5] bg-[#F4F5F6]">
-                {heroImage && (
+              <div className={`aspect-[4/5] bg-[#F4F5F6] ${refining ? 'skeleton' : ''}`}>
+                {!refining && heroImage && (
                   <img
                     key={`m-hero-${indices[0]}`}
                     src={heroImage}
@@ -311,9 +313,10 @@ function LookPageContent() {
                                 ?? item.alternatives[0]?.imageUrl
                     return (
                       <div key={i}
-                           className="w-[28vw] min-w-[88px] max-w-[130px] aspect-[4/5]
-                                      shrink-0 rounded-lg overflow-hidden bg-[#F4F5F6]">
-                        {img && (
+                           className={`w-[28vw] min-w-[88px] max-w-[130px] aspect-[4/5]
+                                       shrink-0 rounded-lg overflow-hidden bg-[#F4F5F6]
+                                       ${refining ? 'skeleton' : ''}`}>
+                        {!refining && img && (
                           <img
                             key={`m-strip-${i}-${altIdx}`}
                             src={img}
@@ -386,18 +389,45 @@ function LookPageContent() {
             {/* Hairline separator */}
             <div className="border-t border-black/[0.06] mb-5" />
 
-            {/* Product cards */}
-            <div key={`items-${idx}`} className="flex flex-col gap-4">
-              {activeOutfit.items.map((item, i) => (
-                <ItemCard
-                  key={`${idx}-${i}`}
-                  item={item}
-                  idx={indices[i] ?? 0}
-                  onIdxChange={newIdx => setItemIdx(i, newIdx)}
-                  animDelay={i * 60}
-                />
-              ))}
-            </div>
+            {/* Product cards / skeleton */}
+            {refining ? (
+              <div className="flex flex-col gap-4">
+                {/* Live status text */}
+                {refineStatus && (
+                  <p className="text-[12px] text-[rgba(26,26,26,0.4)] -mb-1">
+                    {refineStatus}
+                  </p>
+                )}
+                {activeOutfit.items.map((_, i) => (
+                  <div key={i}
+                       className="rounded-lg flex min-h-[130px] sm:min-h-[148px]
+                                  border border-black/[0.06] overflow-hidden">
+                    {/* image placeholder */}
+                    <div className="w-28 sm:w-[160px] shrink-0 skeleton" />
+                    {/* text placeholders */}
+                    <div className="flex-1 flex flex-col justify-center gap-2.5
+                                    py-5 sm:py-6 px-4 sm:px-6">
+                      <div className="skeleton h-2 w-14 rounded-full" />
+                      <div className="skeleton h-4 w-full rounded" />
+                      <div className="skeleton h-4 w-3/5 rounded" />
+                      <div className="skeleton h-5 w-1/4 rounded mt-1" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div key={`items-${idx}`} className="flex flex-col gap-4">
+                {activeOutfit.items.map((item, i) => (
+                  <ItemCard
+                    key={`${idx}-${i}`}
+                    item={item}
+                    idx={indices[i] ?? 0}
+                    onIdxChange={newIdx => setItemIdx(i, newIdx)}
+                    animDelay={i * 60}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* ── Refinement chips (always in-flow) ─────────────────── */}
             {session.refinements.length > 0 && !refining && (
