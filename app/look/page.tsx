@@ -86,8 +86,9 @@ function LookPageContent() {
   const q   = searchParams.get('q') ?? ''
   const idx = Math.max(0, parseInt(searchParams.get('idx') ?? '0', 10))
 
-  const [session, setSession] = useState<LookSession | null>(null)
-  const [ready, setReady]     = useState(false)
+  const [session, setSession]       = useState<LookSession | null>(null)
+  const [ready, setReady]           = useState(false)
+  const [refineQuery, setRefineQuery] = useState('')
   const tabsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -114,6 +115,12 @@ function LookPageContent() {
 
   function switchOutfit(i: number) {
     router.replace(`/look?q=${encodeURIComponent(q)}&idx=${i}`)
+  }
+
+  function handleRefine(refinedQ: string) {
+    const trimmed = refinedQ.trim()
+    if (!trimmed) return
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`)
   }
 
   return (
@@ -208,12 +215,64 @@ function LookPageContent() {
           </div>
         </section>
 
-        {/* ── Refinement zone — Slice 5 ───────────────────────────── */}
-        <section className="pt-8">
-          <div className="rounded-[12px] border border-black/[0.06] bg-white p-8
-                          text-center text-[rgba(26,26,26,0.25)] text-sm">
-            Refinement zone — Slice 5
-          </div>
+        {/* ── Refinement zone ─────────────────────────────────────── */}
+        <section className="pt-8" style={{ animation: 'fadeUp 0.5s 0.2s ease both' }}>
+
+          {/* Section label */}
+          <p className="text-[10px] font-semibold tracking-[1.2px] uppercase
+                        text-[rgba(26,26,26,0.35)] mb-4">
+            Refine this look
+          </p>
+
+          {/* Chips — only shown when refinements are available */}
+          {session.refinements.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-5">
+              {session.refinements.map((chip, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleRefine(chip)}
+                  className="px-4 py-2 rounded-full border border-black/[0.12] bg-white
+                             text-[13px] text-[rgba(26,26,26,0.65)]
+                             hover:border-[#1768b0] hover:text-[#1768b0]
+                             transition-colors duration-150 whitespace-nowrap"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Freeform stylist input */}
+          <form
+            onSubmit={e => { e.preventDefault(); handleRefine(refineQuery) }}
+            className="rounded-[14px] bg-[#EAF1FA] p-4 sm:p-5 flex flex-col gap-3"
+          >
+            <p className="text-[12px] font-semibold tracking-[0.6px] uppercase text-[#1768b0]/70">
+              Ask the stylist
+            </p>
+            <div className="flex items-center gap-2 bg-white rounded-[10px] border border-[#1768b0]/20
+                            focus-within:border-[#1768b0] focus-within:shadow-[0_0_0_2px_rgba(23,104,176,0.1)]
+                            transition-all duration-200 px-4 py-3">
+              <i className="fa-solid fa-wand-magic-sparkles text-[13px] text-[#1768b0]/50 shrink-0" />
+              <input
+                value={refineQuery}
+                onChange={e => setRefineQuery(e.target.value)}
+                placeholder="What would you change?"
+                className="flex-1 min-w-0 bg-transparent outline-none text-[14px]
+                           text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.35)]"
+              />
+              {refineQuery.trim() && (
+                <button
+                  type="submit"
+                  className="shrink-0 text-[13px] font-semibold text-[#1768b0]
+                             hover:text-[#1768b0]/70 transition-colors"
+                >
+                  Go
+                </button>
+              )}
+            </div>
+          </form>
+
         </section>
 
       </main>
