@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   let SYSTEM_PROMPT = config.systemPrompt + collectionContext
   if (gender && config.showGenderFilter) {
-    SYSTEM_PROMPT += `\n\nIMPORTANT: The user is shopping for ${gender === 'men' ? 'a man' : 'a woman'} — every search query and all outfit suggestions must be for ${gender}'s clothing only. Prefix all search_kmart queries with "${gender === 'men' ? "men's" : "women's"}" unless the user has already specified it.`
+    SYSTEM_PROMPT += `\n\nIMPORTANT: The user is shopping for ${gender === 'men' ? 'a man' : 'a woman'} — all outfit suggestions must be for ${gender}. Prefix clothing and footwear searches with "${gender === 'men' ? "men's" : "women's"}" (e.g. "women's jeans", "men's jacket"). Do NOT add a gender prefix to bags, accessories, jewellery, belts, hats, or scarves — Kmart does not gender-tag these (e.g. search "handbag" not "women's handbag", "belt" not "men's belt").`
   }
 
   const encoder = new TextEncoder()

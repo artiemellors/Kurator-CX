@@ -7,6 +7,7 @@ import CuratedLooksTile from '../components/CuratedLooksTile'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
 import { saveLookSession } from '@/lib/look-session'
+import { detectCategory } from '@/lib/detect-category'
 
 
 // Where the CuratedLooksTile is inserted in the product grid (0-indexed)
@@ -105,8 +106,11 @@ function SearchResults() {
     setStatuses([])
     setError(null)
 
-    // Fast path — direct Kmart search, no AI, no category filter
-    fetch(`/api/products?q=${encodeURIComponent(searchQ)}`, {
+    // Fast path — direct Kmart search. Use regex category for the filter
+    // (fast, good enough for grid filtering — AI classification is reserved
+    // for the agent loop which needs accuracy for natural language queries).
+    const gridCategory = detectCategory(searchQ)
+    fetch(`/api/products?q=${encodeURIComponent(searchQ)}&category=${gridCategory}`, {
       signal: controller.signal,
     })
       .then(r => r.json())
