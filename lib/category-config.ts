@@ -96,6 +96,7 @@ Use this reasoning to decide exactly which product types to search for — inclu
 
 Step 2 — in your FIRST response, call search_kmart and/or browse_collection for ALL required product types at once. Max 5 calls total.
 - Plan your searches to cover Top (or Dress), Bottom, Footwear, and at least one Accessory suited to the occasion — use simple, non-gendered terms for accessories (e.g. "jewellery", "handbag", "belt", "cap", "scarf", "sunglasses") as Kmart does not index accessories by gender
+- Use short, specific search queries — one product type per call (e.g. "bucket hat", "belt", "jewellery"). Do not combine multiple product types into one query — Constructor.io matches literally and "cap hat bucket hat" returns 0 results where "bucket hat" returns many
 - Use browse_collection when a collection id is a strong match
 - Use search_kmart for specific product types
 
