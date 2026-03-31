@@ -27,17 +27,41 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[--bg] flex flex-col">
-      {/* Header */}
+      {/* Header — logo + search bar */}
       <header
         className="sticky top-0 z-20 bg-white border-b border-black/[0.06]"
         style={{ animation: 'fadeDown 0.6s ease both' }}
       >
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-20 flex items-center">
-          <Image src="/Logo.svg" alt="Kmart" width={130} height={41} priority />
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-16 flex items-center gap-4 sm:gap-6">
+          <Image src="/Logo.svg" alt="Kmart" width={100} height={32} priority className="shrink-0" />
+          <form
+            onSubmit={e => { e.preventDefault(); handleSearch(query) }}
+            className="flex flex-1 max-w-2xl bg-white border overflow-hidden transition-all duration-200
+                       focus-within:shadow-[0_0_0_2px_rgba(23,104,176,0.1)]
+                       border-black/[0.15] rounded-[8px] focus-within:border-[#1768B0]"
+          >
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder={focused ? 'e.g. smart casual for a job interview' : 'What are you looking for?'}
+              className="flex-1 min-w-0 bg-transparent outline-none px-4 py-3 text-[#1a1a1a]
+                         text-[14px] placeholder:text-[rgba(26,26,26,0.35)]"
+              autoFocus
+            />
+            <button
+              type="submit"
+              className="shrink-0 px-4 text-white bg-[#1768B0] border-none cursor-pointer
+                         hover:brightness-90 transition-all active:scale-[0.98]"
+            >
+              <i className="fa-solid fa-wand-magic-sparkles text-[13px]" />
+            </button>
+          </form>
         </div>
       </header>
 
-      {/* Main — vertically centred search */}
+      {/* Main — headline + occasion tiles */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
         <div
           className="w-full max-w-xl"
@@ -50,35 +74,9 @@ export default function Home() {
             Find your complete look.
           </h1>
 
-          <form
-            onSubmit={e => { e.preventDefault(); handleSearch(query) }}
-            className="flex w-full bg-white border overflow-hidden transition-all duration-200
-                       focus-within:shadow-[0_0_0_3px_rgba(23,104,176,0.1)]
-                       border-black/[0.2] rounded-[10px] focus-within:border-[#1768B0]"
-          >
-            <input
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              placeholder={focused ? 'e.g. smart casual for a job interview' : 'What are you looking for?'}
-              className="flex-1 min-w-0 bg-transparent border-none outline-none px-6 py-[18px]
-                         text-[#1a1a1a] placeholder:text-[rgba(26,26,26,0.35)]"
-              style={{ fontSize: '16px', zoom: 0.875 }}
-            />
-            <button
-              type="submit"
-              className="shrink-0 px-7 text-white flex items-center justify-center
-                         border-none cursor-pointer transition-all hover:brightness-90 active:scale-[0.98]"
-              style={{ background: '#1768B0' }}
-            >
-              <i className="fa-solid fa-wand-magic-sparkles text-[15px]" />
-            </button>
-          </form>
-
           {/* Occasion tiles */}
           <div
-            className="mt-8"
+            className="mt-2"
             style={{ animation: 'fadeUp 0.5s 0.3s ease both', opacity: 0 }}
           >
             <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[rgba(26,26,26,0.35)] mb-3">
