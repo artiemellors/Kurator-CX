@@ -185,10 +185,16 @@ const HOME_CONFIG: CategoryConfig = {
 2. Once you have results, call present_outfits — do NOT describe looks in text.
 
 Each product has an "id", "name", "price", and "colour" field. When calling present_outfits, reference products by their id only. Provide 2–4 named room looks. For each look, group items by room element (Cushions, Rug, Throw, Lighting, Wall Art, Storage, Vase, etc.) with 3–5 product alternatives per slot. Use colour to build cohesive looks — prefer combinations where tones complement each other. You MUST call present_outfits even if some searches returned no results. Do not use emojis in look names or descriptions.`,
-  // filters[Category][]=Cushions, Indoor Cushions, Rugs, Quilt Cover Sets, Sheeting,
-  //   Quilts, Coverlets & Comforters, Lighting, Vases, Decor Accessories, Wall Art,
+  // filters[Category][]=Furniture, Bedroom, Bathroom, Home Decor, Storage & Organisation,
+  //   Cushions, Indoor Cushions, Rugs, Quilt Cover Sets, Sheeting, Quilts,
+  //   Coverlets & Comforters, Lighting, Vases, Decor Accessories, Wall Art,
   //   Candles & Home Fragrance, Artificial plants & flowers, Baskets, Curtains & Rods
   categoryFilter:
+    '&filters%5BCategory%5D%5B%5D=Furniture' +
+    '&filters%5BCategory%5D%5B%5D=Bedroom' +
+    '&filters%5BCategory%5D%5B%5D=Bathroom' +
+    '&filters%5BCategory%5D%5B%5D=Home%20Decor' +
+    '&filters%5BCategory%5D%5B%5D=Storage%20%26%20Organisation' +
     '&filters%5BCategory%5D%5B%5D=Cushions' +
     '&filters%5BCategory%5D%5B%5D=Indoor%20Cushions' +
     '&filters%5BCategory%5D%5B%5D=Rugs' +
@@ -274,14 +280,23 @@ const KITCHEN_CONFIG: CategoryConfig = {
 2. Once you have results, call present_outfits — do NOT describe sets in text.
 
 Each product has an "id", "name", "price", and "colour" field. When calling present_outfits, reference products by their id only. Provide 2–4 named kitchen sets. For each set, group items by category (Cookware, Utensils, Tableware, Storage, Appliance, Bakeware, etc.) with 3–5 product alternatives per slot. Use colour and material to build cohesive sets. You MUST call present_outfits even if some searches returned no results. Do not use emojis in set names or descriptions.`,
-  // filters[Category][]=Cookware, Bakeware, Kitchen Appliances, Dinnerware, Serveware, Kitchen Storage
+  // filters[Category][]=Cookware, Bakeware, Kitchen Appliances, Food Preparation,
+  //   Kitchen Storage, Kitchen Utensils, Dinnerware, Glassware, Serveware, Tableware,
+  //   Kitchen Linen & Tea Towels, Lunch Boxes & Drink Bottles, Outdoor Dining
   categoryFilter:
     '&filters%5BCategory%5D%5B%5D=Cookware' +
     '&filters%5BCategory%5D%5B%5D=Bakeware' +
     '&filters%5BCategory%5D%5B%5D=Kitchen%20Appliances' +
+    '&filters%5BCategory%5D%5B%5D=Food%20Preparation' +
+    '&filters%5BCategory%5D%5B%5D=Kitchen%20Storage' +
+    '&filters%5BCategory%5D%5B%5D=Kitchen%20Utensils' +
     '&filters%5BCategory%5D%5B%5D=Dinnerware' +
+    '&filters%5BCategory%5D%5B%5D=Glassware' +
     '&filters%5BCategory%5D%5B%5D=Serveware' +
-    '&filters%5BCategory%5D%5B%5D=Kitchen%20Storage',
+    '&filters%5BCategory%5D%5B%5D=Tableware' +
+    '&filters%5BCategory%5D%5B%5D=Kitchen%20Linen%20%26%20Tea%20Towels' +
+    '&filters%5BCategory%5D%5B%5D=Lunch%20Boxes%20%26%20Drink%20Bottles' +
+    '&filters%5BCategory%5D%5B%5D=Outdoor%20Dining',
   collectionKeywords: [
     'cookware', 'pan', 'pot', 'knife', 'cutting board', 'utensil', 'mug', 'cup',
     'plate', 'bowl', 'glass', 'bakeware', 'storage', 'container', 'appliance',
