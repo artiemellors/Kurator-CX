@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { searchKmart, browseCollection, fetchCollections, Product } from '@/lib/kmart-scraper'
 import { getCategoryConfig } from '@/lib/category-config'
+import { classifyCategory } from '@/lib/detect-category'
 import { runAgentLoop } from '@/lib/llm-agent'
 
 const WOMENS_TERMS = /\b(women'?s?|ladies|girl'?s?|feminine|womens)\b/i
@@ -32,13 +33,14 @@ function filterProducts(products: Product[], gender: 'men' | 'women' | null, que
 }
 
 export async function POST(req: NextRequest) {
-  const { query, gender: explicitGender, category } = await req.json() as {
+  const { query, gender: explicitGender } = await req.json() as {
     query: string
     gender: 'men' | 'women' | null
-    category?: string
   }
 
-  const config = getCategoryConfig(category ?? 'outfits')
+  // AI-powered classification — runs in parallel with direct product search on client
+  const category = await classifyCategory(query)
+  const config = getCategoryConfig(category)
   // Use explicit gender if provided, otherwise infer from query text
   const gender = explicitGender ?? (config.showGenderFilter ? inferGender(query) : null)
   const queryIsForKids = QUERY_KIDS.test(query)
@@ -70,6 +72,9 @@ export async function POST(req: NextRequest) {
       }
 
       try {
+        // Tell the client what category was classified so it can pass it to the look page
+        send({ type: 'category', result: category })
+
         const productMap = new Map<string, Product>()
         let searchIndex = 0
 

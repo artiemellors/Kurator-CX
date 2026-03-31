@@ -7,7 +7,7 @@ import CuratedLooksTile from '../components/CuratedLooksTile'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
 import { saveLookSession } from '@/lib/look-session'
-import { detectCategory } from '@/lib/detect-category'
+
 
 // Where the CuratedLooksTile is inserted in the product grid (0-indexed)
 const TILE_INSERT_POSITION = 4
@@ -74,6 +74,7 @@ function SearchResults() {
   const [productsLoading, setProductsLoading] = useState(false)
   const [bundleLoading, setBundleLoading]     = useState(false)
   const [error, setError]                     = useState<string | null>(null)
+  const classifiedCategoryRef = useRef<string>('outfits')
   const abortRef          = useRef<AbortController | null>(null)
   // Tracks whether the fast-path direct search returned 0 results.
   // When true, products from the SSE stream are used to fill the grid instead.
@@ -96,8 +97,6 @@ function SearchResults() {
     noDirectResultsRef.current = false
     sseProductsRef.current     = []
 
-    const category = detectCategory(searchQ)
-
     setProductsLoading(true)
     setBundleLoading(true)
     setOutfits(null)
@@ -106,8 +105,8 @@ function SearchResults() {
     setStatuses([])
     setError(null)
 
-    // Fast path — direct Kmart search, no AI
-    fetch(`/api/products?q=${encodeURIComponent(searchQ)}&category=${category}`, {
+    // Fast path — direct Kmart search, no AI, no category filter
+    fetch(`/api/products?q=${encodeURIComponent(searchQ)}`, {
       signal: controller.signal,
     })
       .then(r => r.json())
@@ -134,11 +133,11 @@ function SearchResults() {
         setProductsLoading(false)
       })
 
-    // Slow path — Claude decides what to search for and builds the outfit bundle
-    fetchBundle(searchQ, category, controller.signal)
+    // Slow path — AI classifies category server-side and builds the bundle
+    fetchBundle(searchQ, controller.signal)
   }
 
-  async function fetchBundle(searchQ: string, category: string, signal: AbortSignal) {
+  async function fetchBundle(searchQ: string, signal: AbortSignal) {
     // Track outfits and refinements locally so we can write them together to sessionStorage
     let latestOutfits: Outfit[] = []
     let latestRefinements: string[] = []
@@ -147,7 +146,7 @@ function SearchResults() {
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchQ, gender: null, category }),
+        body: JSON.stringify({ query: searchQ, gender: null }),
         signal,
       })
 
@@ -164,7 +163,9 @@ function SearchResults() {
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue
           const event = JSON.parse(line.slice(6))
-          if (event.type === 'status') {
+          if (event.type === 'category') {
+            classifiedCategoryRef.current = event.result as string
+          } else if (event.type === 'status') {
             setStatuses(prev => [...prev, event.message])
           } else if (event.type === 'products') {
             // Products from the AI's search calls — used as grid fallback when
@@ -224,8 +225,7 @@ function SearchResults() {
   }
 
   function handleExplore(idx: number) {
-    const category = detectCategory(q)
-    router.push(`/look?q=${encodeURIComponent(q)}&idx=${idx}&category=${category}`)
+    router.push(`/look?q=${encodeURIComponent(q)}&idx=${idx}&category=${classifiedCategoryRef.current}`)
   }
 
   // Only reserve a tile slot if the bundle is loading or succeeded
