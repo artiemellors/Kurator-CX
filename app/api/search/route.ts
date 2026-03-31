@@ -59,8 +59,15 @@ export async function POST(req: NextRequest) {
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (event: object) =>
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+      let closed = false
+      const send = (event: object) => {
+        if (closed) return
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+        } catch {
+          closed = true
+        }
+      }
 
       try {
         const productMap = new Map<string, Product>()
@@ -226,7 +233,8 @@ export async function POST(req: NextRequest) {
         console.error('[Search] Route error:', err)
         send({ type: 'error', message: String(err) })
       } finally {
-        controller.close()
+        closed = true
+        try { controller.close() } catch { /* already closed */ }
       }
     },
   })

@@ -183,9 +183,11 @@ function SearchResults() {
               setProductsLoading(false)
             }
           } else if (event.type === 'done') {
-            latestOutfits = event.result
-            setOutfits(latestOutfits)
-            saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements })
+            latestOutfits = event.result ?? []
+            setOutfits(latestOutfits.length > 0 ? latestOutfits : null)
+            if (latestOutfits.length > 0) {
+              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements })
+            }
             setBundleLoading(false)
             // If we still have no products (direct returned 0, SSE found nothing either),
             // resolve the loading state so the empty grid is shown.
