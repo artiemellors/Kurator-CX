@@ -1,39 +1,44 @@
 import { NextRequest } from 'next/server'
 import { searchKmart, browseCollection, fetchCollections, Product } from '@/lib/kmart-scraper'
 import { runAgentLoop } from '@/lib/llm-agent'
+import { getCategoryConfig } from '@/lib/category-config'
 
-const SYSTEM_PROMPT = `You are a Kmart Australia fashion editor creating outfit-based shoppable edits.
+function buildCollectionsPrompt(categoryLabel: string, itemGroupLabel: string): string {
+  return `You are a Kmart Australia ${categoryLabel} editor creating shoppable themed edits.
 
-Given a style request and a set of already-found products, create exactly 3 distinct themed collections. Each collection must be OUTFIT-READY — a curated mix of product categories that together build a complete look (tops, bottoms, footwear, outerwear, accessories). Never fill a collection with only one category.
+Given a request and a set of already-found products, create exactly 3 distinct themed collections. Each collection must be well-rounded — a curated mix of product types from different sub-categories. Never fill a collection with only one product type.
 
 Each collection needs:
 - A short editorial name (2–4 words, e.g. "Coastal Weekend", "Smart Casual", "Bold & Bright")
-- 10–15 products drawn from multiple outfit categories (aim for at least 4 different categories per collection)
+- 10–15 products drawn from multiple sub-categories (aim for at least 4 different types per collection)
 
 Search strategy:
-- You already have some products from the outfit search — check what categories they cover first
-- Then search for ADDITIONAL categories that are missing or under-represented
+- You already have some products from the initial search — check what types they cover first
+- Then search for ADDITIONAL types that are missing or under-represented
 - You MUST make at least 6 search calls before calling present_collections — build a large product pool
-- Use search_kmart for specific items (e.g. "linen trousers", "white sneakers", "crossbody bag")
+- Use search_kmart for specific items
 - Use browse_collection when a Kmart collection fits a theme
 
-Product ordering — apply "colour story + outfit adjacency":
+Product ordering — apply "colour story + item adjacency":
 1. Group products by colour family (neutrals/whites first, then earth tones, then mid-tones, then accents/brights)
-2. Within each colour group, place items that would be worn together adjacent to each other
-3. The result should read as visually cohesive rows and naturally shoppable outfit pairings
+2. Within each colour group, place items that would be used or displayed together adjacent to each other
+3. The result should read as visually cohesive rows and naturally shoppable ${itemGroupLabel.toLowerCase()} pairings
 
 Once you have at least 60 total products across seed + searches, call present_collections.`
+}
 
 export async function POST(req: NextRequest) {
-  const { query, seedProducts } = await req.json() as {
+  const { query, seedProducts, category } = await req.json() as {
     query: string
     seedProducts?: Array<{ name: string; price: string; colour?: string; productUrl?: string; imageUrl?: string }>
+    category?: string
   }
+  const config = getCategoryConfig(category ?? 'outfits')
   if (!query?.trim()) return Response.json({ collections: [] })
 
-  console.log(`[Collections] Building collections for "${query}" (${seedProducts?.length ?? 0} seed products)`)
+  console.log(`[Collections] Building collections for "${query}" category=${category ?? 'outfits'} (${seedProducts?.length ?? 0} seed products)`)
 
-  const availableCollections = await fetchCollections([])
+  const availableCollections = await fetchCollections(config.collectionKeywords)
   const collectionContext = availableCollections.length > 0
     ? `\n\nAvailable Kmart collections you can browse:\n${availableCollections.map(c => `  ${c.id} → ${c.display_name}`).join('\n')}`
     : ''
@@ -52,6 +57,8 @@ export async function POST(req: NextRequest) {
       })
       seedContext = `\n\nAlready-found products from the outfit search (use these IDs directly — do NOT re-search them):\n${seedList.join('\n')}`
     }
+
+    const SYSTEM_PROMPT = buildCollectionsPrompt(config.label, config.itemGroupLabel)
 
     const result = await runAgentLoop({
       system: SYSTEM_PROMPT,
@@ -108,7 +115,7 @@ export async function POST(req: NextRequest) {
         const fetched = await Promise.all(
           calls.map(c =>
             c.name === 'search_kmart'
-              ? searchKmart((c.args as { query: string }).query)
+              ? searchKmart((c.args as { query: string }).query, config.categoryFilter)
               : browseCollection((c.args as { collection_id: string }).collection_id)
           )
         )

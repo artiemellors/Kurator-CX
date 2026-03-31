@@ -7,6 +7,7 @@ import CuratedLooksTile from '../components/CuratedLooksTile'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
 import { saveLookSession } from '@/lib/look-session'
+import { detectCategory } from '@/lib/detect-category'
 
 // Where the CuratedLooksTile is inserted in the product grid (0-indexed)
 const TILE_INSERT_POSITION = 4
@@ -95,6 +96,8 @@ function SearchResults() {
     noDirectResultsRef.current = false
     sseProductsRef.current     = []
 
+    const category = detectCategory(searchQ)
+
     setProductsLoading(true)
     setBundleLoading(true)
     setOutfits(null)
@@ -104,7 +107,7 @@ function SearchResults() {
     setError(null)
 
     // Fast path — direct Kmart search, no AI
-    fetch(`/api/products?q=${encodeURIComponent(searchQ)}&category=outfits`, {
+    fetch(`/api/products?q=${encodeURIComponent(searchQ)}&category=${category}`, {
       signal: controller.signal,
     })
       .then(r => r.json())
@@ -144,7 +147,7 @@ function SearchResults() {
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchQ, gender: null, category: 'outfits' }),
+        body: JSON.stringify({ query: searchQ, gender: null, category }),
         signal,
       })
 
@@ -219,7 +222,8 @@ function SearchResults() {
   }
 
   function handleExplore(idx: number) {
-    router.push(`/look?q=${encodeURIComponent(q)}&idx=${idx}`)
+    const category = detectCategory(q)
+    router.push(`/look?q=${encodeURIComponent(q)}&idx=${idx}&category=${category}`)
   }
 
   // Only reserve a tile slot if the bundle is loading or succeeded

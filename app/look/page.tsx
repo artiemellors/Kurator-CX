@@ -11,8 +11,9 @@ function LookPageContent() {
   const searchParams = useSearchParams()
   const router       = useRouter()
 
-  const q   = searchParams.get('q') ?? ''
-  const idx = Math.max(0, parseInt(searchParams.get('idx') ?? '0', 10))
+  const q        = searchParams.get('q') ?? ''
+  const idx      = Math.max(0, parseInt(searchParams.get('idx') ?? '0', 10))
+  const category = searchParams.get('category') ?? 'outfits'
 
   const [session, setSession]           = useState<LookSession | null>(null)
   const [ready, setReady]               = useState(false)
@@ -92,7 +93,7 @@ function LookPageContent() {
     fetch('/api/collections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q, seedProducts }),
+      body: JSON.stringify({ query: q, seedProducts, category }),
     })
       .then(r => r.json())
       .then(({ collections: c }) => setCollections(c ?? []))
@@ -126,7 +127,7 @@ function LookPageContent() {
   if (!ready || !session || !activeOutfit) return null
 
   function switchOutfit(i: number) {
-    router.replace(`/look?q=${encodeURIComponent(q)}&idx=${i}`)
+    router.replace(`/look?q=${encodeURIComponent(q)}&idx=${i}&category=${category}`)
   }
 
   function setItemIdx(itemIdx: number, altIdx: number) {
