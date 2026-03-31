@@ -6,7 +6,7 @@ import Image from 'next/image'
 import CuratedLooksTile from '../components/CuratedLooksTile'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
-import { saveLookSession } from '@/lib/look-session'
+import { saveLookSession, loadLookSession } from '@/lib/look-session'
 import { detectCategory } from '@/lib/detect-category'
 
 
@@ -137,8 +137,16 @@ function SearchResults() {
         setProductsLoading(false)
       })
 
-    // Slow path — AI classifies category server-side and builds the bundle
-    fetchBundle(searchQ, controller.signal)
+    // Slow path — AI classifies category server-side and builds the bundle.
+    // Skip if a session already exists for this query (e.g. navigating back from look page).
+    const cached = loadLookSession(searchQ)
+    if (cached) {
+      setOutfits(cached.outfits)
+      setRefinements(cached.refinements)
+      setBundleLoading(false)
+    } else {
+      fetchBundle(searchQ, controller.signal)
+    }
   }
 
   async function fetchBundle(searchQ: string, signal: AbortSignal) {
