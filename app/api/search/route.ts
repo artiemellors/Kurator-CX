@@ -158,6 +158,12 @@ export async function POST(req: NextRequest) {
               const si = searchIndex++
               console.log(`[${isSearch ? 'search_kmart' : 'browse_collection'}] "${label}" → ${allProducts.length} total, ${products.length} to AI`)
 
+              // Emit full result set so the search page can fill the product grid
+              // for natural-language queries that return 0 from direct Kmart search
+              if (allProducts.length > 0) {
+                send({ type: 'products', result: allProducts })
+              }
+
               if (products.length > 0) {
                 send({ type: 'status', message: `Found ${products.length} options for "${label}"` })
               } else {

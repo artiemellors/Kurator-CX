@@ -73,7 +73,12 @@ function SearchResults() {
   const [productsLoading, setProductsLoading] = useState(false)
   const [bundleLoading, setBundleLoading]     = useState(false)
   const [error, setError]                     = useState<string | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
+  const abortRef          = useRef<AbortController | null>(null)
+  // Tracks whether the fast-path direct search returned 0 results.
+  // When true, products from the SSE stream are used to fill the grid instead.
+  const noDirectResultsRef = useRef(false)
+  // Accumulates SSE products across multiple search_kmart calls, deduped by name+colour.
+  const sseProductsRef     = useRef<CollectionProduct[]>([])
 
   useEffect(() => {
     if (!q) return
@@ -86,6 +91,9 @@ function SearchResults() {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
+
+    noDirectResultsRef.current = false
+    sseProductsRef.current     = []
 
     setProductsLoading(true)
     setBundleLoading(true)
@@ -102,8 +110,20 @@ function SearchResults() {
       .then(r => r.json())
       .then(({ products: raw }: { products: CollectionProduct[] }) => {
         if (controller.signal.aborted) return
-        setProducts(raw)
-        setProductsLoading(false)
+        if (raw.length > 0) {
+          setProducts(raw)
+          setProductsLoading(false)
+        } else {
+          // No direct results — keep the skeleton going and wait for SSE products.
+          // If the SSE stream already delivered some, use them immediately.
+          noDirectResultsRef.current = true
+          if (sseProductsRef.current.length > 0) {
+            setProducts(sseProductsRef.current)
+            setProductsLoading(false)
+          }
+          // Otherwise productsLoading stays true until SSE products arrive
+          // (or the bundle search finishes with nothing).
+        }
       })
       .catch(err => {
         if (controller.signal.aborted) return
@@ -143,21 +163,46 @@ function SearchResults() {
           const event = JSON.parse(line.slice(6))
           if (event.type === 'status') {
             setStatuses(prev => [...prev, event.message])
+          } else if (event.type === 'products') {
+            // Products from the AI's search calls — used as grid fallback when
+            // the direct Kmart search returns 0 (natural-language queries).
+            if (noDirectResultsRef.current) {
+              const incoming = event.result as CollectionProduct[]
+              const seen = new Set(sseProductsRef.current.map(p => `${p.name}::${p.colour ?? ''}`))
+              const fresh = incoming.filter(p => {
+                const key = `${p.name}::${p.colour ?? ''}`
+                if (seen.has(key)) return false
+                seen.add(key)
+                return true
+              })
+              sseProductsRef.current = [...sseProductsRef.current, ...fresh]
+              setProducts(sseProductsRef.current)
+              setProductsLoading(false)
+            }
           } else if (event.type === 'done') {
             latestOutfits = event.result
             setOutfits(latestOutfits)
             saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements })
             setBundleLoading(false)
+            // If we still have no products (direct returned 0, SSE found nothing either),
+            // resolve the loading state so the empty grid is shown.
+            if (noDirectResultsRef.current) {
+              setProducts(sseProductsRef.current)
+              setProductsLoading(false)
+            }
           } else if (event.type === 'refinements') {
             latestRefinements = event.result
             setRefinements(latestRefinements)
-            // Update session with refinements once they arrive
             if (latestOutfits.length > 0) {
               saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements })
             }
           } else if (event.type === 'error') {
             console.error('[Bundle] SSE error event:', event.message)
             setBundleLoading(false)
+            if (noDirectResultsRef.current) {
+              setProducts(sseProductsRef.current)
+              setProductsLoading(false)
+            }
           }
         }
       }
