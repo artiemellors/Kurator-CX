@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { loadLookSession, saveLookSession, type LookSession } from '@/lib/look-session'
 import { ItemCard, type Outfit } from '@/app/components/OutfitResults'
 import { ProductCollections, type ProductCollection } from '@/app/components/ProductCollections'
+import { getCategoryConfig } from '@/lib/category-config'
 
 function LookPageContent() {
   const searchParams = useSearchParams()
@@ -113,7 +114,7 @@ function LookPageContent() {
     const container = tabsRef.current
     if (!container) return
     const tab = container.children[idx] as HTMLElement | undefined
-    tab?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' })
+    tab?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })
   }, [idx])
 
   // Abort any in-flight refinement on unmount
@@ -428,10 +429,6 @@ function LookPageContent() {
             {/* Editorial header */}
             <div key={`info-${idx}`} className="mb-5"
                  style={{ animation: 'fadeUp 0.35s ease both' }}>
-              <p className="text-[10px] tracking-[1.2px] uppercase
-                            text-[rgba(26,26,26,0.35)] mb-2">
-                Curated for &ldquo;{q}&rdquo;
-              </p>
               {session.outfits.length <= 1 && (
                 <h1 className="text-[24px] sm:text-[28px] font-bold text-[#1a1a1a]
                                leading-tight mb-3">
@@ -446,14 +443,19 @@ function LookPageContent() {
             </div>
 
             {/* Hairline separator + bundle total */}
-            <div className="border-t border-black/[0.06] pt-4 mb-5 flex items-baseline justify-between">
-              <span className="text-[11px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)]">
-                Selected total
-              </span>
-              <span className="text-[22px] font-bold text-[#1a1a1a] leading-none">
-                <span className="text-[14px] font-bold align-top leading-[1.6]">$</span>
-                {bundleTotal.toFixed(2).replace(/^[^.]*/, n => parseInt(n, 10).toString())}
-              </span>
+            <div className="border-t border-black/[0.06] pt-4 mb-5">
+              <p className="text-[10px] tracking-[1.4px] uppercase text-[rgba(26,26,26,0.4)] mb-0.5">
+                {getCategoryConfig(category).totalLabel}
+              </p>
+              <div className="flex items-baseline gap-4">
+                <span className="text-[32px] font-bold text-[#1768B0] leading-none">
+                  <span className="text-[18px] font-bold align-top leading-[1.55]">$</span>
+                  {bundleTotal.toFixed(2).replace(/^[^.]*/, n => parseInt(n, 10).toString())}
+                </span>
+                <span className="text-[13px] text-[rgba(26,26,26,0.4)]">
+                  {activeOutfit.items.length} {activeOutfit.items.length === 1 ? 'piece' : 'pieces'}
+                </span>
+              </div>
             </div>
 
             {/* Product cards / skeleton */}
