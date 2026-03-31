@@ -135,10 +135,10 @@ function SearchResults() {
       })
 
     // Slow path — Claude decides what to search for and builds the outfit bundle
-    fetchBundle(searchQ, controller.signal)
+    fetchBundle(searchQ, category, controller.signal)
   }
 
-  async function fetchBundle(searchQ: string, signal: AbortSignal) {
+  async function fetchBundle(searchQ: string, category: string, signal: AbortSignal) {
     // Track outfits and refinements locally so we can write them together to sessionStorage
     let latestOutfits: Outfit[] = []
     let latestRefinements: string[] = []
