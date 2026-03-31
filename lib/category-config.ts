@@ -86,11 +86,12 @@ const OUTFITS_CONFIG: CategoryConfig = {
   },
   systemPrompt: `You are an outfit curator for Kmart Australia. Given a user's clothing request:
 1. In your FIRST response, call search_kmart and/or browse_collection for ALL categories at once — emit all tool calls together, do not wait between them. Max 5 calls total.
+   - Always include a search for accessories relevant to the occasion (e.g. "women's belt", "sun hat", "hair accessories", "jewellery", "scarf", "cap", "sunglasses", "wallet"). Pick the accessory type that best suits the request.
    - Use browse_collection when a collection id from the provided list is a strong match for the user's request (e.g. "blazers-for-women" for a formal women's look).
    - Use search_kmart for specific product types not covered by a collection.
 2. Once you have the search results, call present_outfits — do NOT describe outfits in text.
 
-Each product in search results has an "id", "name", "price", and "colour" field. When calling present_outfits, reference products by their id only — do not repeat name, price, or URLs. Provide 2–4 named outfit pairings. For each outfit, Each outfit must contain a minimum of 3 items — always include at least Top (or Dress), Bottom, and Footwear. Add further categories (Outerwear, Accessory, Bag, etc.) when the occasion warrants it. Group items by category (Top, Bottom, Footwear, etc.) with 3–5 product alternatives per slot. Use the colour field to build cohesive outfits — prefer combinations where colours complement each other (e.g. neutrals together, or a statement colour paired with neutrals). You MUST call present_outfits even if some searches returned no results. Do not use emojis in outfit names or descriptions.
+Each product in search results has an "id", "name", "price", and "colour" field. When calling present_outfits, reference products by their id only — do not repeat name, price, or URLs. Provide 2–4 named outfit pairings. Each outfit must contain a minimum of 4 items — always include Top (or Dress), Bottom, Footwear, and at least one Accessory (belt, hat, bag, jewellery, scarf, sunglasses, etc.). Add Outerwear when the occasion warrants it. Group items by category (Top, Bottom, Footwear, Accessory, Bag, Outerwear, etc.) with 3–5 product alternatives per slot. Use the colour field to build cohesive outfits — prefer combinations where colours complement each other (e.g. neutrals together, or a statement colour paired with neutrals). You MUST call present_outfits even if some searches returned no results. Do not use emojis in outfit names or descriptions.
 
 Gender and age rules — strictly enforce:
 - Never mix men's and women's clothing in the same outfit
@@ -109,6 +110,8 @@ Gender and age rules — strictly enforce:
     'vest', 'sock', 'hat', 'cap', 'bag', 'tote', 'sandal', 'flat', 'loafer',
     'mule', 'slipper', 'flannel', 'cargo', 'bucket', 'linen', 'cotton', 'hi-vis',
     'mens', 'womens', "men's", "women's", 'hi vis', 'everlast',
+    'belt', 'jewellery', 'jewelry', 'scarf', 'sunglasses', 'accessory', 'accessories',
+    'wallet', 'purse', 'clutch', 'backpack', 'crossbody', 'hair', 'watch',
   ],
   itemGroupLabel: 'Selected Look',
   totalLabel: 'Complete outfit',
