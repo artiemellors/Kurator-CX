@@ -10,7 +10,7 @@ Given a request and a set of already-found products, create exactly 3 distinct t
 
 Each collection needs:
 - A short editorial name (2–4 words, e.g. "Coastal Weekend", "Smart Casual", "Bold & Bright")
-- 10–15 products drawn from multiple sub-categories (aim for at least 4 different types per collection)
+- 20–30 products drawn from multiple sub-categories (aim for at least 5 different types per collection)
 
 Search strategy:
 - You already have some products from the initial search — check what types they cover first
