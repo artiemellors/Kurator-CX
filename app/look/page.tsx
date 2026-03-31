@@ -243,6 +243,11 @@ function LookPageContent() {
     }
   }
 
+  const bundleTotal = activeOutfit.items.reduce((sum, item, i) => {
+    const alt = item.alternatives[indices[i] ?? 0] ?? item.alternatives[0]
+    return sum + (parseFloat(alt?.price?.replace(/[^0-9.]/g, '') ?? '0') || 0)
+  }, 0)
+
   const heroItem   = activeOutfit.items[heroSlot]
   const heroImage  = heroItem?.alternatives[indices[heroSlot] ?? 0]?.imageUrl
                   ?? heroItem?.alternatives[0]?.imageUrl
@@ -440,8 +445,16 @@ function LookPageContent() {
               )}
             </div>
 
-            {/* Hairline separator */}
-            <div className="border-t border-black/[0.06] mb-5" />
+            {/* Hairline separator + bundle total */}
+            <div className="border-t border-black/[0.06] pt-4 mb-5 flex items-baseline justify-between">
+              <span className="text-[11px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)]">
+                Selected total
+              </span>
+              <span className="text-[22px] font-bold text-[#1a1a1a] leading-none">
+                <span className="text-[14px] font-bold align-top leading-[1.6]">$</span>
+                {bundleTotal.toFixed(2).replace(/^[^.]*/, n => parseInt(n, 10).toString())}
+              </span>
+            </div>
 
             {/* Product cards / skeleton */}
             {refining ? (
