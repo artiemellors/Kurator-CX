@@ -182,6 +182,7 @@ const HOME_CONFIG: CategoryConfig = {
 1. In your FIRST response, call search_kmart and/or browse_collection for ALL relevant product types at once — emit all tool calls together. Max 5 calls total.
    - Use browse_collection when a collection id is a strong match.
    - Use search_kmart for specific product types not covered by a collection.
+   - Search by product type only — do NOT add style words like "minimalist", "Scandinavian", or "modern" to furniture and large item searches (e.g. use "coffee table" not "minimalist coffee table"). Style modifiers are fine for colour-led soft furnishing searches (e.g. "green cushion", "grey rug").
 2. Once you have results, call present_outfits — do NOT describe looks in text.
 
 Each product has an "id", "name", "price", and "colour" field. When calling present_outfits, reference products by their id only. Provide 2–4 named room looks. For each look, group items by room element (Cushions, Rug, Throw, Lighting, Wall Art, Storage, Vase, etc.) with 3–5 product alternatives per slot. Use colour to build cohesive looks — prefer combinations where tones complement each other. You MUST call present_outfits even if some searches returned no results. Do not use emojis in look names or descriptions.`,

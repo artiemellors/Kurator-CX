@@ -115,9 +115,11 @@ export async function POST(req: NextRequest) {
                                 items: { type: 'string' },
                               },
                             },
+                            required: ['category', 'alternatives'],
                           },
                         },
                       },
+                      required: ['name', 'items'],
                     },
                   },
                   refinements: {
