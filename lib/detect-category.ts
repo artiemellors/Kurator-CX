@@ -7,18 +7,9 @@ import type { CategorySlug } from './category-config'
 
 const SIGNALS: Partial<Record<CategorySlug, RegExp>> = {
   easter: /\b(easter|egg hunt|hot cross|bunny|rabbit)\b/i,
-
-  parties: /\b(party|parties|birthday|balloon|celebrate|celebration|confetti|streamer
-             |theme party|kids party|party supplies|party decor|party pack)\b/ix,
-
-  kitchen: /\b(cook(ware|ing)?|bak(e|ing|eware)|kitchen|pan|pots?|skillet|casserole
-             |utensil|cutlery|recipe|dining set|bbq|barbecue|roast|wok|colander
-             |coffee (station|maker)|appliance|crockery|tableware|serveware)\b/ix,
-
-  home: /\b(living room|bedroom|bathroom|cushion|throw pillow|rug|area rug
-           |home decor|interior|wall art|lamp|light(ing)?|curtain|blind
-           |sofa|couch|lounge|shelf|shelving|vase|candle|mirror|bedding
-           |quilt|duvet|linen|frame|basket|storage unit|side table)\b/ix,
+  parties: /\b(party|parties|birthday|balloon|celebrate|celebration|confetti|streamer|theme party|kids party|party supplies|party decor|party pack)\b/i,
+  kitchen: /\b(cook(ware|ing)?|bak(e|ing|eware)|kitchen|pan|pots?|skillet|casserole|utensil|cutlery|recipe|dining set|bbq|barbecue|roast|wok|colander|coffee station|coffee maker|appliance|crockery|tableware|serveware)\b/i,
+  home: /\b(living room|bedroom|bathroom|cushion|throw pillow|rug|area rug|home decor|interior|wall art|lamp|lighting|curtain|blind|sofa|couch|lounge|shelf|shelving|vase|candle|mirror|bedding|quilt|duvet|linen|frame|basket|storage unit|side table)\b/i,
 }
 
 const PRIORITY: CategorySlug[] = ['easter', 'parties', 'kitchen', 'home']
