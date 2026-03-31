@@ -27,6 +27,8 @@ function LookPageContent() {
   const [refineError, setRefineError]   = useState<string | null>(null)
   const [refineCount, setRefineCount]   = useState(0)
   const [heroSlot, setHeroSlot]         = useState(0)
+  const [inputFixed, setInputFixed] = useState(true)
+  const sentinelRef    = useRef<HTMLDivElement>(null)
   const tabsRef        = useRef<HTMLDivElement>(null)
   const refineAbortRef = useRef<AbortController | null>(null)
   const phraseIdxRef  = useRef(0)
@@ -116,6 +118,18 @@ function LookPageContent() {
 
   // Abort any in-flight refinement on unmount
   useEffect(() => () => { refineAbortRef.current?.abort() }, [])
+
+  // Dock the refinement input into flow once its natural position scrolls into view
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => setInputFixed(!entry.isIntersecting),
+      { threshold: 0 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   // Auto-dismiss error after 4s
   useEffect(() => {
@@ -488,15 +502,20 @@ function LookPageContent() {
               </div>
             )}
 
-            {/* ── Refinement input — fixed on mobile, in-flow on desktop ── */}
-            <div className="fixed bottom-0 left-0 right-0 z-20
-                            bg-white/75 backdrop-blur-xl
-                            shadow-[0_-1px_0_0_rgba(0,0,0,0.05)]
-                            px-4 pt-2.5 pb-10
-                            lg:static lg:bottom-auto lg:left-auto lg:right-auto lg:z-auto
+            {/* Sentinel — marks the natural position of the refinement input.
+                When visible, the input docks here instead of staying fixed. */}
+            <div ref={sentinelRef} className="h-px" />
+
+            {/* ── Refinement input — fixed on mobile until sentinel is visible ── */}
+            <div className={`z-20 border-t border-black/[0.06] mt-6
+                            lg:border-t lg:border-black/[0.06] lg:mt-6
+                            ${inputFixed
+                              ? 'fixed bottom-0 left-0 right-0 border-t-0 mt-0 bg-white/75 backdrop-blur-xl shadow-[0_-1px_0_0_rgba(0,0,0,0.05)] px-4 pt-2.5 pb-10'
+                              : 'static pt-6 pb-8'
+                            }
+                            lg:static lg:bottom-auto lg:left-auto lg:right-auto
                             lg:bg-transparent lg:backdrop-blur-none lg:shadow-none
-                            lg:border-t lg:border-black/[0.06]
-                            lg:px-0 lg:pt-6 lg:pb-8 lg:mt-6">
+                            lg:px-0 lg:pt-6 lg:pb-8`}
               {refineError && (
                 <p className="text-[12px] text-red-500 mb-2 px-1">{refineError}</p>
               )}
@@ -557,8 +576,8 @@ function LookPageContent() {
               </form>
             </div>
 
-            {/* Spacer reserves space for the fixed bar on mobile */}
-            <div className="h-24 lg:hidden" />
+            {/* Spacer: only needed when the bar is fixed (not yet docked) */}
+            {inputFixed && <div className="h-24 lg:hidden" />}
 
           </div>
         </div>
