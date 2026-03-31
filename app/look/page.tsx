@@ -515,7 +515,7 @@ function LookPageContent() {
                             }
                             lg:static lg:bottom-auto lg:left-auto lg:right-auto
                             lg:bg-transparent lg:backdrop-blur-none lg:shadow-none
-                            lg:px-0 lg:pt-6 lg:pb-8`}
+                            lg:px-0 lg:pt-6 lg:pb-8`}>
               {refineError && (
                 <p className="text-[12px] text-red-500 mb-2 px-1">{refineError}</p>
               )}
