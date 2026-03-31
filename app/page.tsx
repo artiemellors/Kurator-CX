@@ -4,19 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
-const OCCASION_TILES = [
-  { label: 'Job Interview',  query: 'smart casual outfit for a job interview' },
-  { label: 'Weekend Brunch', query: 'weekend brunch, something relaxed' },
-  { label: 'Beach Day',      query: 'beach day with the kids' },
-  { label: 'Date Night',     query: 'date night, a bit dressed up' },
-  { label: 'Night Out',      query: 'night out outfit' },
-  { label: 'Gym',            query: 'gym outfit' },
-  { label: 'Winter Layers',  query: 'cosy winter layers' },
-  { label: 'Workwear',       query: "workwear that doesn't feel boring" },
-]
-
 export default function Home() {
-  const [query, setQuery] = useState('')
+  const [query, setQuery]     = useState('')
   const [focused, setFocused] = useState(false)
   const router = useRouter()
 
@@ -26,7 +15,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[--bg] flex flex-col">
+    <div className="min-h-screen bg-[#f0f0f0] flex flex-col">
+
       {/* Header — logo + search bar */}
       <header
         className="sticky top-0 z-20 bg-white border-b border-black/[0.06]"
@@ -61,43 +51,34 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main — headline + occasion tiles */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
-        <div
-          className="w-full max-w-xl"
-          style={{ animation: 'fadeUp 0.7s 0.1s ease both', opacity: 0 }}
-        >
-          <h1
-            className="font-sans font-bold text-[#1a1a1a] mb-8 leading-[1.1]"
-            style={{ fontSize: 'clamp(28px, 5vw, 48px)' }}
-          >
-            Find your complete look.
-          </h1>
+      {/* Wireframe page content */}
+      <main
+        className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-8 py-6 flex flex-col gap-6"
+        style={{ animation: 'fadeUp 0.5s 0.15s ease both', opacity: 0 }}
+      >
 
-          {/* Occasion tiles */}
-          <div
-            className="mt-2"
-            style={{ animation: 'fadeUp 0.5s 0.3s ease both', opacity: 0 }}
-          >
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[rgba(26,26,26,0.35)] mb-3">
-              Popular occasions
-            </p>
-            <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-x-visible scrollbar-hide gap-2 pb-1">
-              {OCCASION_TILES.map(tile => (
-                <button
-                  key={tile.label}
-                  type="button"
-                  onClick={() => handleSearch(tile.query)}
-                  className="flex-shrink-0 px-4 py-2 bg-white transition-all duration-150 cursor-pointer active:scale-[0.98]
-                             border border-[#1768B0] rounded-full text-sm font-normal text-[#1768B0]
-                             hover:bg-[#1768B0] hover:text-white"
-                >
-                  {tile.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Hero banner placeholder */}
+        <div className="w-full h-[180px] sm:h-[260px] rounded-xl bg-[#e0e0e0]" />
+
+        {/* Category pill row */}
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+          {[96, 80, 112, 88, 104, 76, 96, 88].map((w, i) => (
+            <div key={i} className="shrink-0 h-8 rounded-full bg-[#e0e0e0]" style={{ width: w }} />
+          ))}
         </div>
+
+        {/* Product grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-5">
+          {Array.from({ length: 15 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <div className="aspect-[4/5] w-full rounded-lg bg-[#e0e0e0]" />
+              <div className="h-3 w-4/5 rounded bg-[#e0e0e0]" />
+              <div className="h-3 w-3/5 rounded bg-[#e0e0e0]" />
+              <div className="h-4 w-2/5 rounded bg-[#e0e0e0]" />
+            </div>
+          ))}
+        </div>
+
       </main>
     </div>
   )
