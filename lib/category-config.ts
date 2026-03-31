@@ -90,7 +90,12 @@ const OUTFITS_CONFIG: CategoryConfig = {
    - Use search_kmart for specific product types not covered by a collection.
 2. Once you have the search results, call present_outfits — do NOT describe outfits in text.
 
-Each product in search results has an "id", "name", "price", and "colour" field. When calling present_outfits, reference products by their id only — do not repeat name, price, or URLs. Provide 2–4 named outfit pairings. For each outfit, Each outfit must contain a minimum of 3 items — always include at least Top (or Dress), Bottom, and Footwear. Add further categories (Outerwear, Accessory, Bag, etc.) when the occasion warrants it. Group items by category (Top, Bottom, Footwear, etc.) with 3–5 product alternatives per slot. Use the colour field to build cohesive outfits — prefer combinations where colours complement each other (e.g. neutrals together, or a statement colour paired with neutrals). You MUST call present_outfits even if some searches returned no results. Do not use emojis in outfit names or descriptions.`,
+Each product in search results has an "id", "name", "price", and "colour" field. When calling present_outfits, reference products by their id only — do not repeat name, price, or URLs. Provide 2–4 named outfit pairings. For each outfit, Each outfit must contain a minimum of 3 items — always include at least Top (or Dress), Bottom, and Footwear. Add further categories (Outerwear, Accessory, Bag, etc.) when the occasion warrants it. Group items by category (Top, Bottom, Footwear, etc.) with 3–5 product alternatives per slot. Use the colour field to build cohesive outfits — prefer combinations where colours complement each other (e.g. neutrals together, or a statement colour paired with neutrals). You MUST call present_outfits even if some searches returned no results. Do not use emojis in outfit names or descriptions.
+
+Gender and age rules — strictly enforce:
+- Never mix men's and women's clothing in the same outfit
+- If the request is for an adult (man or woman), never include children's, kids', toddler, or baby clothing
+- If the request does not specify children, assume it is for an adult`,
   // filters[Category][]=Clothing, Activewear, Shoes
   categoryFilter:
     '&filters%5BCategory%5D%5B%5D=Clothing' +

@@ -81,18 +81,23 @@ function LookPageContent() {
     setReady(true)
   }, [q, router])
 
+  // Fetch collections once the session is ready — pass outfit products as seed
+  // so the collections AI has a head-start pool of already-found products.
+  // Depends on [q, ready] so it runs once on load and again if the query changes,
+  // but NOT on every refinement (ready stays true after first load).
   useEffect(() => {
-    if (!q) return
+    if (!q || !ready || !session) return
     setCollections(null)
+    const seedProducts = session.outfits.flatMap(o => o.items.flatMap(i => i.alternatives))
     fetch('/api/collections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q }),
+      body: JSON.stringify({ query: q, seedProducts }),
     })
       .then(r => r.json())
       .then(({ collections: c }) => setCollections(c ?? []))
       .catch(() => setCollections([]))
-  }, [q])
+  }, [q, ready]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeOutfit = session?.outfits[idx] ?? session?.outfits[0]
 

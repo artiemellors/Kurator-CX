@@ -4,14 +4,16 @@ import { runAgentLoop } from '@/lib/llm-agent'
 
 const SYSTEM_PROMPT = `You are a Kmart Australia fashion editor creating outfit-based shoppable edits.
 
-Given a style request, create exactly 3 distinct themed collections. Each collection must be OUTFIT-READY — a curated mix of product categories that together build a complete look (tops, bottoms, footwear, outerwear, accessories). Never fill a collection with only one category.
+Given a style request and a set of already-found products, create exactly 3 distinct themed collections. Each collection must be OUTFIT-READY — a curated mix of product categories that together build a complete look (tops, bottoms, footwear, outerwear, accessories). Never fill a collection with only one category.
 
 Each collection needs:
 - A short editorial name (2–4 words, e.g. "Coastal Weekend", "Smart Casual", "Bold & Bright")
-- 8–12 products drawn from multiple outfit categories (aim for at least 4 different categories per collection)
+- 10–15 products drawn from multiple outfit categories (aim for at least 4 different categories per collection)
 
 Search strategy:
-- Think about what outfit themes complement the request, then search for each component category
+- You already have some products from the outfit search — check what categories they cover first
+- Then search for ADDITIONAL categories that are missing or under-represented
+- You MUST make at least 6 search calls before calling present_collections — build a large product pool
 - Use search_kmart for specific items (e.g. "linen trousers", "white sneakers", "crossbody bag")
 - Use browse_collection when a Kmart collection fits a theme
 
@@ -20,13 +22,16 @@ Product ordering — apply "colour story + outfit adjacency":
 2. Within each colour group, place items that would be worn together adjacent to each other
 3. The result should read as visually cohesive rows and naturally shoppable outfit pairings
 
-Once you have enough products, call present_collections with your results in this deliberate order.`
+Once you have at least 60 total products across seed + searches, call present_collections.`
 
 export async function POST(req: NextRequest) {
-  const { query } = await req.json() as { query: string }
+  const { query, seedProducts } = await req.json() as {
+    query: string
+    seedProducts?: Array<{ name: string; price: string; colour?: string; productUrl?: string; imageUrl?: string }>
+  }
   if (!query?.trim()) return Response.json({ collections: [] })
 
-  console.log(`[Collections] Building collections for "${query}"`)
+  console.log(`[Collections] Building collections for "${query}" (${seedProducts?.length ?? 0} seed products)`)
 
   const availableCollections = await fetchCollections([])
   const collectionContext = availableCollections.length > 0
@@ -37,15 +42,26 @@ export async function POST(req: NextRequest) {
     const productMap = new Map<string, Product>()
     let searchIndex = 0
 
+    // Pre-populate productMap with outfit seed products
+    let seedContext = ''
+    if (seedProducts && seedProducts.length > 0) {
+      const seedList = seedProducts.map((p, i) => {
+        const id = `seed_${i}`
+        productMap.set(id, p as Product)
+        return `  ${id} | ${p.name} | ${p.price}${p.colour ? ` | ${p.colour}` : ''}`
+      })
+      seedContext = `\n\nAlready-found products from the outfit search (use these IDs directly — do NOT re-search them):\n${seedList.join('\n')}`
+    }
+
     const result = await runAgentLoop({
       system: SYSTEM_PROMPT,
-      userMessage: `Create 3 themed product collections for: "${query}"${collectionContext}`,
+      userMessage: `Create 3 themed product collections for: "${query}"${seedContext}${collectionContext}`,
       maxTokens: 4096,
-      maxTurns: 12,
+      maxTurns: 15,
       tools: [
         {
           name: 'search_kmart',
-          description: 'Search Kmart Australia for products. Returns up to 10 products.',
+          description: 'Search Kmart Australia for products. Returns up to 20 products.',
           parameters: {
             type: 'object',
             properties: { query: { type: 'string' } },
@@ -63,7 +79,7 @@ export async function POST(req: NextRequest) {
         },
         {
           name: 'present_collections',
-          description: 'Present the final themed collections. Call once all searches are done.',
+          description: 'Present the final themed collections. Call only after making at least 6 searches.',
           parameters: {
             type: 'object',
             properties: {
@@ -97,7 +113,8 @@ export async function POST(req: NextRequest) {
           )
         )
         return calls.map((c, i) => {
-          const products = fetched[i].slice(0, 10)
+          // Show AI up to 20 products per search (vs 10 for outfits) for a larger pool
+          const products = fetched[i].slice(0, 20)
           const si = searchIndex++
           const tagged = products.map((p, pi) => {
             const id = `q${si}p${pi}`

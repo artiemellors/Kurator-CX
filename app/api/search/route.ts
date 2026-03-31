@@ -5,32 +5,56 @@ import { runAgentLoop } from '@/lib/llm-agent'
 
 const WOMENS_TERMS = /\b(women'?s?|ladies|girl'?s?|feminine|womens)\b/i
 const MENS_TERMS   = /\b(men'?s?|guy'?s?|boys?|masculine|mens)\b/i
+// Children's/baby terms — excluded whenever the request is clearly for adults
+const KIDS_TERMS   = /\b(kids?|children'?s?|toddler|infant|baby|babies|junior|youth|newborn)\b/i
+// Signals in the query that confirm it is for children
+const QUERY_KIDS   = /\b(kids?|children|toddler|infant|baby|junior|youth|little ones?)\b/i
 
-function filterByGender(products: Product[], gender: 'men' | 'women' | null): Product[] {
-  if (!gender) return products
-  const excludePattern = gender === 'men' ? WOMENS_TERMS : MENS_TERMS
-  return products.filter(p => !excludePattern.test(p.name))
+function inferGender(query: string): 'men' | 'women' | null {
+  const q = query.toLowerCase()
+  if (/\b(for (a |the )?(man|men|guy|male|him|husband|boyfriend|dad|father|boy))\b/.test(q)) return 'men'
+  if (/\b(for (a |the )?(woman|women|girl|female|her|wife|girlfriend|mum|mom|mother))\b/.test(q)) return 'women'
+  if (/\b(men'?s|menswear|his |male )\b/.test(q)) return 'men'
+  if (/\b(women'?s|womenswear|her |female )\b/.test(q)) return 'women'
+  return null
+}
+
+function filterProducts(products: Product[], gender: 'men' | 'women' | null, queryIsForKids: boolean): Product[] {
+  return products.filter(p => {
+    const name = p.name
+    // Always exclude opposite gender
+    if (gender === 'men'   && WOMENS_TERMS.test(name)) return false
+    if (gender === 'women' && MENS_TERMS.test(name))   return false
+    // Exclude kids items when the query is for adults
+    if (!queryIsForKids && KIDS_TERMS.test(name)) return false
+    return true
+  })
 }
 
 export async function POST(req: NextRequest) {
-  const { query, gender, category } = await req.json() as {
+  const { query, gender: explicitGender, category } = await req.json() as {
     query: string
     gender: 'men' | 'women' | null
     category?: string
   }
 
   const config = getCategoryConfig(category ?? 'outfits')
+  // Use explicit gender if provided, otherwise infer from query text
+  const gender = explicitGender ?? (config.showGenderFilter ? inferGender(query) : null)
+  const queryIsForKids = QUERY_KIDS.test(query)
+
   console.log(`\n${'='.repeat(60)}`)
-  console.log(`[Request] query="${query}" gender=${gender ?? 'none'} category=${category ?? 'outfits'}`)
+  console.log(`[Request] query="${query}" gender=${gender ?? 'none'} (explicit=${explicitGender ?? 'none'}) kidsQuery=${queryIsForKids} category=${category ?? 'outfits'}`)
 
   const availableCollections = await fetchCollections(config.collectionKeywords)
   const collectionContext = availableCollections.length > 0
     ? `\n\nAvailable Kmart collections you can browse with browse_collection (id → display name):\n${availableCollections.map(c => `  ${c.id} → ${c.display_name}`).join('\n')}`
     : ''
 
-  const SYSTEM_PROMPT = gender && config.showGenderFilter
-    ? `${config.systemPrompt}${collectionContext}\n\nIMPORTANT: The user is shopping for ${gender === 'men' ? 'a man' : 'a woman'} — every search query and all outfit suggestions must be for ${gender}'s clothing only. Prefix all search_kmart queries with "${gender === 'men' ? "men's" : "women's"}" unless the user has already specified it.`
-    : `${config.systemPrompt}${collectionContext}`
+  let SYSTEM_PROMPT = config.systemPrompt + collectionContext
+  if (gender && config.showGenderFilter) {
+    SYSTEM_PROMPT += `\n\nIMPORTANT: The user is shopping for ${gender === 'men' ? 'a man' : 'a woman'} — every search query and all outfit suggestions must be for ${gender}'s clothing only. Prefix all search_kmart queries with "${gender === 'men' ? "men's" : "women's"}" unless the user has already specified it.`
+  }
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -129,7 +153,7 @@ export async function POST(req: NextRequest) {
             return calls.map((c, i) => {
               const isSearch = c.name === 'search_kmart'
               const label = isSearch ? (c.args as { query: string }).query : (c.args as { collection_id: string }).collection_id
-              const allProducts = config.showGenderFilter ? filterByGender(fetched[i], gender) : fetched[i]
+              const allProducts = config.showGenderFilter ? filterProducts(fetched[i], gender, queryIsForKids) : fetched[i]
               const products = allProducts.slice(0, 10)
               const si = searchIndex++
               console.log(`[${isSearch ? 'search_kmart' : 'browse_collection'}] "${label}" → ${allProducts.length} total, ${products.length} to AI`)
