@@ -100,6 +100,8 @@ function EditPageContent() {
   const [collections, setCollections] = useState<CollectionPreview[]>([])
   const [outfits, setOutfits]         = useState<Outfit[]>([])
   const [activeIdx, setActiveIdx]     = useState(idx)
+  // null = use collection's own pivots; string[] = user-overridden subset
+  const [overridePivots, setOverridePivots] = useState<string[] | null>(null)
   const [ready, setReady]             = useState(false)
   const [products, setProducts]       = useState<CollectionProduct[] | null>(null)
   const [loading, setLoading]         = useState(false)
@@ -119,11 +121,15 @@ function EditPageContent() {
     setReady(true)
   }, [q, idx])
 
-  // Fetch products for the active collection
+  // Fetch products for the active collection (re-runs when pivots change)
   useEffect(() => {
     if (!ready || collections.length === 0) return
     const col = collections[activeIdx]
     if (!col) return
+
+    // Effective pivots: user override or collection defaults
+    const effectivePivots = overridePivots ?? col.pivots
+    const collectionWithPivots = { ...col, pivots: effectivePivots }
 
     setProducts(null)
     setLoading(true)
@@ -133,7 +139,7 @@ function EditPageContent() {
     fetch('/api/edit-products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q, collection: col, category }),
+      body: JSON.stringify({ query: q, collection: collectionWithPivots, category }),
       signal: controller.signal,
     })
       .then(r => r.json())
@@ -151,14 +157,35 @@ function EditPageContent() {
       })
 
     return () => controller.abort()
-  }, [ready, activeIdx, collections, q, category])
+  }, [ready, activeIdx, overridePivots, collections, q, category])
 
   function handleHeaderSearch(newQ: string) {
     if (!newQ.trim()) return
     router.push(`/search?q=${encodeURIComponent(newQ.trim())}`)
   }
 
+  function handleTabSwitch(i: number) {
+    // Batch both updates — single render, single fetch
+    setActiveIdx(i)
+    setOverridePivots(null)
+  }
+
+  function handlePivotToggle(pivot: string) {
+    const col = collections[activeIdx]
+    if (!col) return
+    // Base list to toggle against: override if set, otherwise all collection pivots
+    const current = overridePivots ?? col.pivots
+    const next = current.includes(pivot)
+      ? current.filter(p => p !== pivot)
+      : [...current, pivot]
+    // If back to full set → clear override (treated as default)
+    const isDefault = col.pivots.every(p => next.includes(p)) && next.length === col.pivots.length
+    setOverridePivots(isDefault ? null : next)
+  }
+
   const activeCollection = collections[activeIdx]
+  // Derive which pivots are currently "on" for rendering chip state
+  const activePivotSet = new Set(overridePivots ?? activeCollection?.pivots ?? [])
 
   return (
     <div className="min-h-screen bg-[--bg]">
@@ -214,7 +241,7 @@ function EditPageContent() {
               {collections.map((col, i) => (
                 <button
                   key={i}
-                  onClick={() => setActiveIdx(i)}
+                  onClick={() => handleTabSwitch(i)}
                   className="relative shrink-0 pb-3 pt-0.5 mr-6 last:mr-0"
                 >
                   <span className={`block text-[11px] tracking-[1.32px] uppercase whitespace-nowrap
@@ -243,19 +270,39 @@ function EditPageContent() {
             <p className="text-[15px] text-[rgba(26,26,26,0.6)] leading-[1.6] max-w-xl mb-5">
               {activeCollection.description}
             </p>
-            {/* Pivot chips */}
+            {/* Pivot chips — click to refine */}
             {activeCollection.pivots.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {activeCollection.pivots.map((pivot, i) => (
-                  <span
-                    key={i}
-                    className="px-3 py-1.5 rounded-full border border-black/[0.12] text-[12px]
-                               text-[rgba(26,26,26,0.6)] bg-white hover:border-[#1768b0]
-                               hover:text-[#1768b0] transition-colors cursor-default"
+                {activeCollection.pivots.map((pivot, i) => {
+                  const isActive = activePivotSet.has(pivot)
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handlePivotToggle(pivot)}
+                      className={`px-3 py-1.5 rounded-full border text-[12px] font-medium
+                                  transition-all duration-150 active:scale-95
+                        ${isActive
+                          ? 'border-[#1768b0] text-[#1768b0] bg-[rgba(23,104,176,0.06)]'
+                          : 'border-black/[0.12] text-[rgba(26,26,26,0.4)] bg-white hover:border-black/30 hover:text-[rgba(26,26,26,0.6)]'
+                        }`}
+                    >
+                      {isActive && (
+                        <i className="fa-solid fa-check text-[9px] mr-1.5 align-middle" />
+                      )}
+                      {pivot}
+                    </button>
+                  )
+                })}
+                {/* Reset link — only shown when overriding */}
+                {overridePivots !== null && (
+                  <button
+                    onClick={() => setOverridePivots(null)}
+                    className="px-3 py-1.5 rounded-full text-[11px] text-[rgba(26,26,26,0.35)]
+                               hover:text-[rgba(26,26,26,0.6)] transition-colors underline underline-offset-2"
                   >
-                    {pivot}
-                  </span>
-                ))}
+                    Reset
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -290,6 +337,12 @@ function EditPageContent() {
         )}
 
         {/* Product grid */}
+        {loading && overridePivots !== null && (
+          <p className="text-[12px] text-[rgba(26,26,26,0.4)] mb-4 flex items-center gap-2">
+            <i className="fa-solid fa-wand-magic-sparkles animate-pulse" />
+            Refining…
+          </p>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6">
           {loading && Array.from({ length: 10 }).map((_, i) => (
             <SkeletonProductCard key={i} />
