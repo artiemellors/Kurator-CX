@@ -63,7 +63,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
     .filter((p): p is NonNullable<typeof p> => !!p?.imageUrl)
 
   return (
-    <div className="col-span-2 bg-[#F4F5F6] sm:bg-transparent rounded-[16px] sm:rounded-none p-3 sm:p-0"
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] px-3 py-3 sm:p-3"
          style={{ animation: 'fadeUp 0.5s ease both' }}>
     {/* overflow-hidden keeps circles clipped at rounded corners */}
     <div
