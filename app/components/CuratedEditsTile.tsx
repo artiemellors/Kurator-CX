@@ -60,14 +60,14 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
             min-h-[200px] ensures a sensible size when the tile is alone in its row (mobile). */}
         <div className="px-4 mt-3 grow min-h-[150px] sm:min-h-0">
           <div className="flex gap-2 h-full">
-            {/* Large left */}
-            <div className="flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
+            {/* Large left — img absolute so natural dimensions don't inflate layout height */}
+            <div className="relative flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
               {images[0]?.imageUrl && (
                 <img
                   key={`${activeIdx}-0`}
                   src={images[0].imageUrl}
                   alt={images[0].name}
-                  className="w-full h-full object-cover object-top"
+                  className="absolute inset-0 w-full h-full object-cover object-top"
                   style={{ animation: 'imgFadeIn 220ms ease-out' }}
                 />
               )}
@@ -75,13 +75,13 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
             {/* Two stacked right — slots always rendered so layout stays consistent */}
             <div className="flex-[2] flex flex-col gap-2">
               {[0, 1].map(i => (
-                <div key={i} className="flex-1 rounded-[10px] overflow-hidden bg-[#F4F5F6]">
+                <div key={i} className="relative flex-1 rounded-[10px] overflow-hidden bg-[#F4F5F6]">
                   {images[i + 1]?.imageUrl && (
                     <img
                       key={`${activeIdx}-${i + 1}`}
                       src={images[i + 1].imageUrl}
                       alt={images[i + 1].name}
-                      className="w-full h-full object-cover object-top"
+                      className="absolute inset-0 w-full h-full object-cover object-top"
                       style={{ animation: `imgFadeIn ${220 + i * 60}ms ease-out` }}
                     />
                   )}
