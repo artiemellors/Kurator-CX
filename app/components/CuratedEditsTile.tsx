@@ -23,15 +23,8 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
       <div className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
                       flex flex-col grow overflow-hidden">
 
-        {/* Title */}
-        <div className="px-4 pt-4 pb-0 shrink-0">
-          <h2 className="font-bold text-[20px] leading-[1.35] text-black tracking-[0.07px]">
-            Curated Edits
-          </h2>
-        </div>
-
         {/* Tabs */}
-        <div className="px-4 mt-3 relative shrink-0">
+        <div className="px-4 pt-4 relative shrink-0">
           <div className="flex overflow-x-auto scrollbar-hide">
             {collections.map((col, i) => (
               <button
