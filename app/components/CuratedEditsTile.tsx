@@ -22,7 +22,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
         {/* Title */}
         <div className="px-4 shrink-0">
           <h2 className="font-bold text-[20px] leading-[1.35] text-black tracking-[0.07px]">
-            Curated edits
+            Curated Edits
           </h2>
         </div>
 
@@ -54,8 +54,9 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
 
         {/* Image grid — 1 large left, 2 small right stacked */}
         <div className="px-4 shrink-0">
-          <div className="flex gap-2 h-[200px]">
-            <div className="flex-[3] rounded-lg overflow-hidden bg-[#F4F5F6]">
+          <div className="flex gap-2 h-[220px]">
+            {/* Large left image — always rendered, shows placeholder if no image */}
+            <div className="flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
               {images[0]?.imageUrl && (
                 <img
                   key={`${activeIdx}-0`}
@@ -66,14 +67,15 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
                 />
               )}
             </div>
+            {/* Two stacked right images — slots always present */}
             <div className="flex-[2] flex flex-col gap-2">
-              {([images[1], images[2]] as typeof images).map((img, i) => (
-                <div key={i} className="flex-1 rounded-lg overflow-hidden bg-[#F4F5F6]">
-                  {img?.imageUrl && (
+              {[0, 1].map(i => (
+                <div key={i} className="flex-1 rounded-[10px] overflow-hidden bg-[#F4F5F6]">
+                  {images[i + 1]?.imageUrl && (
                     <img
                       key={`${activeIdx}-${i + 1}`}
-                      src={img.imageUrl}
-                      alt={img.name}
+                      src={images[i + 1].imageUrl}
+                      alt={images[i + 1].name}
                       className="w-full h-full object-cover object-top"
                       style={{ animation: `imgFadeIn ${220 + i * 60}ms ease-out` }}
                     />
@@ -88,9 +90,9 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
         <div className="px-4 shrink-0">
           <button
             onClick={() => onExplore(activeIdx)}
-            className="w-full py-3.5 rounded-full border border-[#1768b0] text-[#1768b0]
+            className="w-full py-3.5 rounded-full border border-black/[0.15] text-[#1a1a1a]
                        text-[15px] font-semibold transition-all duration-200
-                       hover:bg-[#1768b0] hover:text-white"
+                       hover:border-black/30 hover:bg-black/[0.03]"
           >
             Explore the edit
           </button>
