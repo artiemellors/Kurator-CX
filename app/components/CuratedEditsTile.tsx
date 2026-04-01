@@ -49,9 +49,8 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
           <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
         </div>
 
-        {/* Image grid — grows to fill remaining white-card height.
-            min-h-[200px] ensures a sensible size when the tile is alone in its row (mobile). */}
-        <div className="px-4 mt-3 grow min-h-[150px] sm:min-h-0">
+        {/* Image grid + floating CTA */}
+        <div className="relative px-4 mt-3 pb-4 grow min-h-[150px] sm:min-h-0">
           <div className="flex gap-2 h-[150px] sm:h-full">
             {/* Large left — img absolute so natural dimensions don't inflate layout height */}
             <div className="relative flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
@@ -82,15 +81,14 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* CTA */}
-        <div className="px-4 mt-3 pb-4 shrink-0">
+          {/* CTA — floats over the bottom-left of the image grid */}
           <button
             onClick={() => onExplore(activeIdx)}
-            className="w-full py-3.5 rounded-full border border-black/[0.15] text-[#1a1a1a]
-                       text-[15px] font-semibold transition-all duration-200
-                       hover:border-black/30 hover:bg-black/[0.03]"
+            className="absolute bottom-4 left-4 px-5 py-2.5 rounded-full bg-white
+                       border border-[#1768b0] text-[#1768b0] text-[13px] font-semibold
+                       shadow-sm transition-all duration-200
+                       hover:bg-[#1768b0] hover:text-white"
           >
             Explore the edit
           </button>
