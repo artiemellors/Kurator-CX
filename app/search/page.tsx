@@ -6,7 +6,7 @@ import Image from 'next/image'
 import CuratedLooksTile from '../components/CuratedLooksTile'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
-import { saveLookSession, loadLookSession } from '@/lib/look-session'
+import { saveLookSession, loadLookSession, type CollectionPreview } from '@/lib/look-session'
 import { detectCategory } from '@/lib/detect-category'
 
 
@@ -74,6 +74,7 @@ function SearchResults() {
   const [products, setProducts]               = useState<CollectionProduct[] | null>(null)
   const [productsLoading, setProductsLoading] = useState(false)
   const [bundleLoading, setBundleLoading]     = useState(false)
+  const [collections, setCollections]         = useState<CollectionPreview[]>([])
   const [error, setError]                     = useState<string | null>(null)
   const classifiedCategoryRef = useRef<string>('outfits')
   const abortRef          = useRef<AbortController | null>(null)
@@ -102,6 +103,7 @@ function SearchResults() {
     setBundleLoading(true)
     setOutfits(null)
     setRefinements([])
+    setCollections([])
     setProducts(null)
     setStatuses([])
     setError(null)
@@ -143,6 +145,7 @@ function SearchResults() {
     if (cached) {
       setOutfits(cached.outfits)
       setRefinements(cached.refinements)
+      if (cached.collections.length > 0) setCollections(cached.collections)
       setBundleLoading(false)
     } else {
       fetchBundle(searchQ, controller.signal)
@@ -153,7 +156,7 @@ function SearchResults() {
     // Track outfits, refinements, and collections locally so we can write them together to sessionStorage
     let latestOutfits: Outfit[] = []
     let latestRefinements: string[] = []
-    let latestCollections: import('@/lib/look-session').CollectionPreview[] = []
+    let latestCollections: CollectionPreview[] = []
 
     try {
       const res = await fetch('/api/search', {
@@ -200,6 +203,7 @@ function SearchResults() {
             latestOutfits = event.result ?? []
             latestCollections = Array.isArray(event.collections) ? event.collections : []
             setOutfits(latestOutfits.length > 0 ? latestOutfits : null)
+            if (latestCollections.length > 0) setCollections(latestCollections)
             if (latestOutfits.length > 0) {
               saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: latestCollections })
             }
