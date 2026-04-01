@@ -63,11 +63,12 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
     .filter((p): p is NonNullable<typeof p> => !!p?.imageUrl)
 
   return (
-    // overflow-hidden keeps circles clipped at rounded corners
+    <div className="col-span-2 bg-[#F4F5F6] sm:bg-transparent rounded-[16px] sm:rounded-none p-3 sm:p-0"
+         style={{ animation: 'fadeUp 0.5s ease both' }}>
+    {/* overflow-hidden keeps circles clipped at rounded corners */}
     <div
-      className="col-span-2 bg-[#F4F5F6] sm:bg-white rounded-[12px] sm:border-[1.5px] sm:border-black/[0.06]
+      className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
                  flex flex-col gap-5 pt-5 pb-5 overflow-hidden"
-      style={{ animation: 'fadeUp 0.5s ease both' }}
     >
       {/* Title */}
       <div className="px-5 shrink-0">
@@ -152,6 +153,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
           Explore the look
         </button>
       </div>
+    </div>
     </div>
   )
 }
