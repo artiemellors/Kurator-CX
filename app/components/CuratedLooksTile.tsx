@@ -65,7 +65,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
   return (
     // overflow-hidden keeps circles clipped at rounded corners
     <div
-      className="col-span-2 bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
+      className="col-span-2 bg-[#F4F5F6] sm:bg-white rounded-[12px] sm:border-[1.5px] sm:border-black/[0.06]
                  flex flex-col gap-5 pt-5 pb-5 overflow-hidden"
       style={{ animation: 'fadeUp 0.5s ease both' }}
     >
