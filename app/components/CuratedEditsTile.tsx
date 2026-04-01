@@ -14,13 +14,13 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
   const images = active?.products.filter(p => p.imageUrl).slice(0, 3) ?? []
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] px-3 py-3 sm:p-3"
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] px-3 py-3 sm:p-3 h-full"
          style={{ animation: 'fadeUp 0.5s ease both' }}>
       <div className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
-                      flex flex-col gap-4 pt-4 pb-4 overflow-hidden">
+                      flex flex-col h-full overflow-hidden">
 
         {/* Title */}
-        <div className="px-4 shrink-0">
+        <div className="px-4 pt-4 shrink-0">
           <h2 className="font-bold text-[20px] leading-[1.35] text-black tracking-[0.07px]">
             Curated Edits
           </h2>
@@ -52,9 +52,9 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
           <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
         </div>
 
-        {/* Image grid — 1 large left, 2 small right stacked */}
-        <div className="px-4 shrink-0">
-          <div className="flex gap-2 h-[220px]">
+        {/* Image grid — 1 large left, 2 small right stacked — expands to fill row height */}
+        <div className="px-4 flex-1 min-h-0">
+          <div className="flex gap-2 h-full">
             {/* Large left image — always rendered, shows placeholder if no image */}
             <div className="flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
               {images[0]?.imageUrl && (
@@ -87,7 +87,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
         </div>
 
         {/* CTA */}
-        <div className="px-4 shrink-0">
+        <div className="px-4 pb-4 shrink-0">
           <button
             onClick={() => onExplore(activeIdx)}
             className="w-full py-3.5 rounded-full border border-black/[0.15] text-[#1a1a1a]
