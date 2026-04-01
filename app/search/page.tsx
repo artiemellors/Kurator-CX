@@ -150,9 +150,10 @@ function SearchResults() {
   }
 
   async function fetchBundle(searchQ: string, signal: AbortSignal) {
-    // Track outfits and refinements locally so we can write them together to sessionStorage
+    // Track outfits, refinements, and collections locally so we can write them together to sessionStorage
     let latestOutfits: Outfit[] = []
     let latestRefinements: string[] = []
+    let latestCollections: import('@/lib/look-session').CollectionPreview[] = []
 
     try {
       const res = await fetch('/api/search', {
@@ -197,9 +198,10 @@ function SearchResults() {
             }
           } else if (event.type === 'done') {
             latestOutfits = event.result ?? []
+            latestCollections = Array.isArray(event.collections) ? event.collections : []
             setOutfits(latestOutfits.length > 0 ? latestOutfits : null)
             if (latestOutfits.length > 0) {
-              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements })
+              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: latestCollections })
             }
             setBundleLoading(false)
             // If we still have no products (direct returned 0, SSE found nothing either),
@@ -212,7 +214,7 @@ function SearchResults() {
             latestRefinements = event.result
             setRefinements(latestRefinements)
             if (latestOutfits.length > 0) {
-              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements })
+              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: latestCollections })
             }
           } else if (event.type === 'error') {
             console.error('[Bundle] SSE error event:', event.message)
