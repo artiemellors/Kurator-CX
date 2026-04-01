@@ -14,20 +14,24 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
   const images = active?.products.filter(p => p.imageUrl).slice(0, 3) ?? []
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] px-3 py-3 sm:p-3 h-full"
+    // Grey wrapper — flex col so the white card can grow to fill the CSS Grid row
+    // (CSS Grid default align-self:stretch gives this div the row track height;
+    //  percentage h-full is unreliable on auto-height implicit grid rows)
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] px-3 py-3 sm:p-3 flex flex-col"
          style={{ animation: 'fadeUp 0.5s ease both' }}>
+      {/* White card — grows to fill the grey wrapper */}
       <div className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
-                      flex flex-col h-full overflow-hidden">
+                      flex flex-col grow overflow-hidden">
 
         {/* Title */}
-        <div className="px-4 pt-4 shrink-0">
+        <div className="px-4 pt-4 pb-0 shrink-0">
           <h2 className="font-bold text-[20px] leading-[1.35] text-black tracking-[0.07px]">
             Curated Edits
           </h2>
         </div>
 
         {/* Tabs */}
-        <div className="px-4 relative shrink-0">
+        <div className="px-4 mt-3 relative shrink-0">
           <div className="flex overflow-x-auto scrollbar-hide">
             {collections.map((col, i) => (
               <button
@@ -52,10 +56,11 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
           <span className="absolute bottom-0 left-0 right-0 h-px bg-black/[0.08]" />
         </div>
 
-        {/* Image grid — 1 large left, 2 small right stacked — expands to fill row height */}
-        <div className="px-4 flex-1 min-h-0">
+        {/* Image grid — grows to fill remaining white-card height.
+            min-h-[200px] ensures a sensible size when the tile is alone in its row (mobile). */}
+        <div className="px-4 mt-3 grow min-h-[200px]">
           <div className="flex gap-2 h-full">
-            {/* Large left image — always rendered, shows placeholder if no image */}
+            {/* Large left */}
             <div className="flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
               {images[0]?.imageUrl && (
                 <img
@@ -67,7 +72,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
                 />
               )}
             </div>
-            {/* Two stacked right images — slots always present */}
+            {/* Two stacked right — slots always rendered so layout stays consistent */}
             <div className="flex-[2] flex flex-col gap-2">
               {[0, 1].map(i => (
                 <div key={i} className="flex-1 rounded-[10px] overflow-hidden bg-[#F4F5F6]">
@@ -87,7 +92,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
         </div>
 
         {/* CTA */}
-        <div className="px-4 pb-4 shrink-0">
+        <div className="px-4 mt-3 pb-4 shrink-0">
           <button
             onClick={() => onExplore(activeIdx)}
             className="w-full py-3.5 rounded-full border border-black/[0.15] text-[#1a1a1a]
