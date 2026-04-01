@@ -61,12 +61,10 @@ function OutfitCallout({ outfit, onViewLook }: { outfit: Outfit; onViewLook: () 
               >
                 <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[8px] bg-[#f9f9f9]
                                 border border-black/[0.06] mb-1.5">
-                  <Image
+                  <img
                     src={product.imageUrl}
                     alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    sizes="140px"
+                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
                 <p className="text-[10px] text-[rgba(26,26,26,0.4)] uppercase tracking-[0.8px] mb-0.5 truncate">
