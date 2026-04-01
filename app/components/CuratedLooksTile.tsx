@@ -127,13 +127,13 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
                 {/* Hover scale — separate layer so it doesn't fight the JS bob transform */}
                 <div className="transition-transform hover:scale-105 hover:z-10">
                   {/* Circle clip — overflow-hidden lives only here */}
-                  <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] xl:h-[210px] xl:w-[210px] rounded-[100px] overflow-hidden bg-[#F4F5F6]">
+                  <div className="relative h-[122px] w-[122px] sm:h-[150px] sm:w-[150px] xl:h-[210px] xl:w-[210px] rounded-full overflow-hidden bg-[#F4F5F6]">
                     <img
                       src={p.imageUrl}
                       alt={p.name}
                       className="absolute inset-0 w-full h-full object-cover object-top"
                     />
-                    <div className="absolute inset-0 rounded-[100px] border border-black/[0.15] pointer-events-none" />
+                    <div className="absolute inset-0 rounded-full border border-black/[0.15] pointer-events-none" />
                   </div>
                 </div>
               </div>
