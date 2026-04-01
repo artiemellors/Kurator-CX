@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import CuratedLooksTile from '../components/CuratedLooksTile'
+import CuratedEditsTile from '../components/CuratedEditsTile'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
 import { saveLookSession, loadLookSession, type CollectionPreview } from '@/lib/look-session'
@@ -12,10 +13,13 @@ import { detectCategory } from '@/lib/detect-category'
 
 // Where the CuratedLooksTile is inserted in the product grid (0-indexed)
 const TILE_INSERT_POSITION = 4
+// Where the CuratedEditsTile is inserted (after the looks tile + products)
+const EDITS_TILE_INSERT_POSITION = 12
 
 type GridItem =
   | { type: 'product'; data: CollectionProduct }
   | { type: 'tile' }
+  | { type: 'edits-tile' }
 
 function SkeletonCard() {
   return (
@@ -56,6 +60,30 @@ function SkeletonTile({ statusText }: { statusText?: string }) {
             className="absolute inset-y-0 left-0 w-1/3 bg-[var(--accent)]"
             style={{ animation: 'progressSweep 1.8s ease-in-out infinite' }}
           />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SkeletonEditsTile() {
+  return (
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] px-3 py-3 sm:p-3">
+      <div className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06] flex flex-col gap-4 pt-4 pb-4 overflow-hidden">
+        <div className="px-4 shrink-0">
+          <div className="skeleton h-6 w-32 rounded" />
+        </div>
+        <div className="px-4 relative shrink-0">
+          <div className="flex gap-6 border-b border-black/[0.08] pb-3">
+            <div className="skeleton h-3 w-20 rounded" />
+            <div className="skeleton h-3 w-28 rounded" />
+          </div>
+        </div>
+        <div className="px-4 shrink-0">
+          <div className="skeleton h-[200px] w-full rounded-lg" />
+        </div>
+        <div className="px-4 shrink-0">
+          <div className="skeleton h-12 w-full rounded-full" />
         </div>
       </div>
     </div>
@@ -246,16 +274,37 @@ function SearchResults() {
     router.push(`/look?q=${encodeURIComponent(q)}&idx=${idx}&category=${classifiedCategoryRef.current}`)
   }
 
+  function handleExploreEdit(idx: number) {
+    router.push(`/edit?q=${encodeURIComponent(q)}&idx=${idx}&category=${classifiedCategoryRef.current}`)
+  }
+
   // Only reserve a tile slot if the bundle is loading or succeeded
-  const showTileSlot = bundleLoading || !!outfits
-  const insertPos = Math.min(TILE_INSERT_POSITION, products?.length ?? 0)
-  const gridItems: GridItem[] = (products && products.length > 0)
-    ? [
-        ...products.slice(0, showTileSlot ? insertPos : products.length).map(p => ({ type: 'product' as const, data: p })),
-        ...(showTileSlot ? [{ type: 'tile' as const }] : []),
-        ...(showTileSlot ? products.slice(insertPos).map(p => ({ type: 'product' as const, data: p })) : []),
-      ]
-    : []
+  const showTileSlot  = bundleLoading || !!outfits
+  const showEditSlot  = bundleLoading || collections.length > 0
+  const insertPos     = Math.min(TILE_INSERT_POSITION, products?.length ?? 0)
+
+  const gridItems: GridItem[] = (() => {
+    if (!products || products.length === 0) return []
+
+    const productItems = products.map(p => ({ type: 'product' as const, data: p }))
+
+    // Build the flat list with the looks tile at insertPos
+    const withLooksTile: GridItem[] = [
+      ...productItems.slice(0, showTileSlot ? insertPos : productItems.length),
+      ...(showTileSlot ? [{ type: 'tile' as const }] : []),
+      ...(showTileSlot ? productItems.slice(insertPos) : []),
+    ]
+
+    if (!showEditSlot) return withLooksTile
+
+    // Insert edits tile after EDITS_TILE_INSERT_POSITION items in the final list
+    const editsPos = Math.min(EDITS_TILE_INSERT_POSITION, withLooksTile.length)
+    return [
+      ...withLooksTile.slice(0, editsPos),
+      { type: 'edits-tile' as const },
+      ...withLooksTile.slice(editsPos),
+    ]
+  })()
 
   const showSkeletons = productsLoading
   const showGrid      = products !== null
@@ -329,6 +378,11 @@ function SearchResults() {
             if (item.type === 'tile') {
               if (outfits) return <CuratedLooksTile key="tile" outfits={outfits} onExplore={handleExplore} />
               if (bundleLoading) return <SkeletonTile key="tile" statusText={statuses[statuses.length - 1]} />
+              return null
+            }
+            if (item.type === 'edits-tile') {
+              if (collections.length > 0) return <CuratedEditsTile key="edits-tile" collections={collections} onExplore={handleExploreEdit} />
+              if (bundleLoading) return <SkeletonEditsTile key="edits-tile" />
               return null
             }
             return (
