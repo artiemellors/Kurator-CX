@@ -52,7 +52,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
         {/* Image grid — grows to fill remaining white-card height.
             min-h-[200px] ensures a sensible size when the tile is alone in its row (mobile). */}
         <div className="px-4 mt-3 grow min-h-[150px] sm:min-h-0">
-          <div className="flex gap-2 h-full">
+          <div className="flex gap-2 h-[150px] sm:h-full">
             {/* Large left — img absolute so natural dimensions don't inflate layout height */}
             <div className="relative flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
               {images[0]?.imageUrl && (
