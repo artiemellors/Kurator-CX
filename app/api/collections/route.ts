@@ -15,16 +15,15 @@ Each collection needs:
 Search strategy:
 - You already have some products from the initial search — check what types they cover first
 - Then search for ADDITIONAL types that are missing or under-represented
-- You MUST make at least 6 search calls before calling present_collections — build a large product pool
-- Use search_kmart for specific items
-- Use browse_collection when a Kmart collection fits a theme
+- Make at least 6 search calls to build a large product pool
+- Use search_kmart for specific items; use browse_collection when a Kmart collection fits a theme
+- If a search returns 0 results, move on immediately — do not retry variants of the same item
+- Once you have 60+ products OR have made 8+ searches, call present_collections straight away
 
 Product ordering — apply "colour story + item adjacency":
 1. Group products by colour family (neutrals/whites first, then earth tones, then mid-tones, then accents/brights)
 2. Within each colour group, place items that would be used or displayed together adjacent to each other
-3. The result should read as visually cohesive rows and naturally shoppable ${itemGroupLabel.toLowerCase()} pairings
-
-Once you have at least 60 total products across seed + searches, call present_collections.`
+3. The result should read as visually cohesive rows and naturally shoppable ${itemGroupLabel.toLowerCase()} pairings`
 }
 
 export async function POST(req: NextRequest) {
@@ -64,7 +63,7 @@ export async function POST(req: NextRequest) {
       system: SYSTEM_PROMPT,
       userMessage: `Create 3 themed product collections for: "${query}"${seedContext}${collectionContext}`,
       maxTokens: 4096,
-      maxTurns: 15,
+      maxTurns: 18,
       tools: [
         {
           name: 'search_kmart',
@@ -138,7 +137,10 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    if (!result) return Response.json({ collections: [] })
+    if (!result) {
+      console.log(`[Collections] Turn limit reached — falling back to ${productMap.size} found products`)
+      return Response.json({ collections: [] })
+    }
 
     const raw = (result.args as {
       collections: Array<{ name: string; product_ids: string[] }>
