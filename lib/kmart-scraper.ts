@@ -107,11 +107,19 @@ export async function browseCollection(collectionId: string): Promise<Product[]>
 }
 
 export async function searchKmart(query: string, categoryFilter = ''): Promise<Product[]> {
-  const url =
-    `https://ac.cnstrc.com/search/${encodeURIComponent(query)}` +
-    `?key=key_GZTqlLr41FS2p7AY&c=ciojs-client-2.71.1&num_results_per_page=24` +
-    categoryFilter
-  console.log(`\n[Search] ${query}`)
+  const useVaisc = process.env.KMART_SEARCH_API === 'vaisc'
+
+  const url = useVaisc
+    ? `https://vaisc-search-api-nnsmv6as2a-ts.a.run.app/api/v1/search/${encodeURIComponent(query)}` +
+      `?num_results_per_page=60&page=1&sort_by=relevance&sort_order=descending` +
+      `&_dt=${Date.now()}&key=key_GZTqlLr41FS2p7AY` +
+      `&visitor_id=1522831643.1770289670&user_id=` +
+      `&filters%5BSeller%5D=Kmart`
+    : `https://ac.cnstrc.com/search/${encodeURIComponent(query)}` +
+      `?key=key_GZTqlLr41FS2p7AY&c=ciojs-client-2.71.1&num_results_per_page=24` +
+      categoryFilter
+
+  console.log(`\n[Search${useVaisc ? '/vaisc' : ''}] ${query}`)
   const res = await fetch(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) {
     console.log(`[Search] HTTP ${res.status} — returning empty`)
