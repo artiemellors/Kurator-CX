@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
     : ''
 
   let SYSTEM_PROMPT = config.systemPrompt + collectionContext
-  SYSTEM_PROMPT += `\n\nWhen calling present_outfits, also populate the collections field. Group the products you found into 2–3 themed editorial collections. Each collection needs a short name with a style point of view, a 2–3 sentence description in a stylist's voice, 3–4 directional pivot chips, and 3 representative product ids. Collections should have distinct themes — do not overlap product ids across collections.`
   if (gender && config.showGenderFilter) {
     SYSTEM_PROMPT += `\n\nIMPORTANT: The user is shopping for ${gender === 'men' ? 'a man' : 'a woman'} — all outfit suggestions must be for ${gender}. Prefix clothing and footwear searches with "${gender === 'men' ? "men's" : "women's"}" (e.g. "women's jeans", "men's jacket"). Do NOT add a gender prefix to bags, accessories, jewellery, belts, hats, or scarves — Kmart does not gender-tag these (e.g. search "handbag" not "women's handbag", "belt" not "men's belt").`
   }
@@ -140,34 +139,6 @@ export async function POST(req: NextRequest) {
                     items: { type: 'string' },
                     description: '4–6 short refinement suggestions. Each 2–5 word lowercase phrase. Vary them — cover at least one price direction, one style shift, and one tone or colour direction.',
                   },
-                  collections: {
-                    type: 'array',
-                    description: '2–3 themed editorial collections grouped from the products you searched. Each collection should have a distinct style point of view.',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        name: {
-                          type: 'string',
-                          description: 'Short editorial name with a style point of view, 2–4 words (e.g. "The Long Weekend", "Coastal Minimal", "Sharp & Simple")',
-                        },
-                        description: {
-                          type: 'string',
-                          description: '2–3 sentences in a stylist\'s voice. Explain the mood, occasion, and aesthetic logic — why these products belong together.',
-                        },
-                        pivots: {
-                          type: 'array',
-                          items: { type: 'string' },
-                          description: '3–4 short style direction chips that would shift this collection (e.g. "more casual", "warmer palette", "under $30", "add a layer")',
-                        },
-                        product_ids: {
-                          type: 'array',
-                          items: { type: 'string' },
-                          description: 'Exactly 3 product ids chosen to create a colour palette / mood-board feel — NOT an outfit arrangement. Pick products with visually distinct, complementary colours that together read as a cohesive colour story for the collection.',
-                        },
-                      },
-                      required: ['name', 'description', 'pivots', 'product_ids'],
-                    },
-                  },
                 },
                 required: ['outfits'],
               },
@@ -234,19 +205,13 @@ export async function POST(req: NextRequest) {
           return
         }
 
-        const { outfits: rawOutfits, refinements: rawRefinements, collections: rawCollections } = result.args as {
+        const { outfits: rawOutfits, refinements: rawRefinements } = result.args as {
           outfits: Array<{
             name: string
             description: string
             items: Array<{ category: string; description: string; alternatives: string[] }>
           }>
           refinements?: string[]
-          collections?: Array<{
-            name: string
-            description: string
-            pivots: string[]
-            product_ids: string[]
-          }>
         }
 
         console.log(`[Search] present_outfits — ${rawOutfits?.length ?? 0} outfits`)
@@ -262,20 +227,7 @@ export async function POST(req: NextRequest) {
           })),
         }))
 
-        const collections = (rawCollections ?? []).map(col => ({
-          name: col.name,
-          description: col.description,
-          pivots: Array.isArray(col.pivots) ? col.pivots.slice(0, 4) : [],
-          products: (col.product_ids ?? [])
-            .slice(0, 3)
-            .map(id => productMap.get(id))
-            .filter((p): p is Product => p !== undefined),
-        })).filter(col => col.products.length > 0)
-
-        console.log(`[Search] collections — ${collections.length} collections`)
-        collections.forEach((c, i) => console.log(`[Search]   Collection ${i + 1}: "${c.name}" — ${c.products.length} preview products`))
-
-        send({ type: 'done', result: outfits, collections })
+        send({ type: 'done', result: outfits })
 
         const refinements = Array.isArray(rawRefinements)
           ? rawRefinements.filter(r => typeof r === 'string').slice(0, 6)

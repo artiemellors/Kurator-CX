@@ -177,14 +177,35 @@ function SearchResults() {
       setBundleLoading(false)
     } else {
       fetchBundle(searchQ, controller.signal)
+      fetchCollectionPreviews(searchQ, controller.signal)
+    }
+  }
+
+  async function fetchCollectionPreviews(searchQ: string, signal: AbortSignal) {
+    try {
+      const res = await fetch('/api/collections-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQ, category: classifiedCategoryRef.current }),
+        signal,
+      })
+      const { collections } = await res.json() as { collections: CollectionPreview[] }
+      if (signal.aborted || !collections?.length) return
+      setCollections(collections)
+      // Merge into session if outfits were already saved
+      const cached = loadLookSession(searchQ)
+      if (cached) saveLookSession({ ...cached, collections })
+    } catch (err) {
+      if (!signal.aborted && (err as Error).name !== 'AbortError') {
+        console.error('[CollectionsPreview]', err)
+      }
     }
   }
 
   async function fetchBundle(searchQ: string, signal: AbortSignal) {
-    // Track outfits, refinements, and collections locally so we can write them together to sessionStorage
+    // Track outfits and refinements locally so we can write them to sessionStorage
     let latestOutfits: Outfit[] = []
     let latestRefinements: string[] = []
-    let latestCollections: CollectionPreview[] = []
 
     try {
       const res = await fetch('/api/search', {
@@ -229,11 +250,9 @@ function SearchResults() {
             }
           } else if (event.type === 'done') {
             latestOutfits = event.result ?? []
-            latestCollections = Array.isArray(event.collections) ? event.collections : []
             setOutfits(latestOutfits.length > 0 ? latestOutfits : null)
-            if (latestCollections.length > 0) setCollections(latestCollections)
             if (latestOutfits.length > 0) {
-              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: latestCollections })
+              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: [] })
             }
             setBundleLoading(false)
             // If we still have no products (direct returned 0, SSE found nothing either),
@@ -246,7 +265,7 @@ function SearchResults() {
             latestRefinements = event.result
             setRefinements(latestRefinements)
             if (latestOutfits.length > 0) {
-              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: latestCollections })
+              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: [] })
             }
           } else if (event.type === 'error') {
             console.error('[Bundle] SSE error event:', event.message)
