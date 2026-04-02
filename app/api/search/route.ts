@@ -145,6 +145,7 @@ export async function POST(req: NextRequest) {
             },
           ],
           terminalTool: 'present_outfits',
+          label: 'Search',
           onTurn: turn => console.log(`\n[Search] Turn ${turn} — calling AI…`),
           onTool: async (calls) => {
             calls.forEach(c => {

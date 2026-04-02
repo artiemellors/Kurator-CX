@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
         },
       ],
       terminalTool: 'present_collections',
+      label: 'Collections',
       onTool: async (calls) => {
         const fetched = await Promise.all(
           calls.map(c =>

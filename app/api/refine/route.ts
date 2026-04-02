@@ -135,6 +135,7 @@ Rules:
             },
           ],
           terminalTool: 'present_outfits',
+          label: 'Refine',
           onTurn: turn => console.log(`[Refine] Turn ${turn} — calling AI…`),
           onTool: async (calls) => {
             calls.forEach(c => {

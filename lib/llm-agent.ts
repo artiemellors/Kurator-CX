@@ -46,6 +46,8 @@ export interface AgentOptions {
   onTool: (calls: FnCall[]) => Promise<Array<{ id: string; name: string; result: string }>>
   /** Optional: called at the start of each turn for logging. */
   onTurn?: (turn: number) => void
+  /** Optional label shown in log lines, e.g. "Search" or "CollectionsPreview". */
+  label?: string
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -122,7 +124,8 @@ async function runAnthropicLoop(opts: AgentOptions, maxTurns: number, maxTokens:
       'Anthropic',
     )
 
-    console.log(`[Anthropic] Turn ${turn + 1} — stop=${response.stop_reason}, in=${response.usage.input_tokens} out=${response.usage.output_tokens}`)
+    const tag = opts.label ? `Anthropic/${opts.label}` : 'Anthropic'
+    console.log(`[${tag}] Turn ${turn + 1} — stop=${response.stop_reason}, in=${response.usage.input_tokens} out=${response.usage.output_tokens}`)
     messages.push({ role: 'assistant', content: response.content })
 
     if (response.stop_reason === 'end_turn') return null
@@ -186,7 +189,8 @@ async function runGeminiLoop(opts: AgentOptions, maxTurns: number, maxTokens: nu
     )
 
     const fnCalls = response.functionCalls ?? []
-    console.log(`[Gemini] Turn ${turn + 1} — ${fnCalls.length} call(s)`)
+    const tag = opts.label ? `Gemini/${opts.label}` : 'Gemini'
+    console.log(`[${tag}] Turn ${turn + 1} — ${fnCalls.length} call(s)`)
 
     if (response.candidates?.[0]?.content) {
       contents.push(response.candidates[0].content)

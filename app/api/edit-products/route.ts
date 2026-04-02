@@ -95,6 +95,7 @@ User search: "${query}"`
         },
       ],
       terminalTool: 'present_products',
+      label: 'EditProducts',
       onTool: async (calls) => {
         const fetched = await Promise.all(
           calls.map(c =>
