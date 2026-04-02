@@ -114,7 +114,8 @@ export async function searchKmart(query: string, categoryFilter = ''): Promise<P
       `?num_results_per_page=60&page=1&sort_by=relevance&sort_order=descending` +
       `&_dt=${Date.now()}&key=key_GZTqlLr41FS2p7AY` +
       `&visitor_id=1522831643.1770289670&user_id=` +
-      `&filters%5BSeller%5D=Kmart`
+      `&filters%5BSeller%5D=Kmart` +
+      categoryFilter
     : `https://ac.cnstrc.com/search/${encodeURIComponent(query)}` +
       `?key=key_GZTqlLr41FS2p7AY&c=ciojs-client-2.71.1&num_results_per_page=24` +
       categoryFilter
