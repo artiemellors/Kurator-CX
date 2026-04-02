@@ -12,10 +12,21 @@ export interface Collection {
   display_name: string
 }
 
+const AU_STATES = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'ACT', 'NT']
+
 function mapProducts(candidates: Record<string, unknown>[]): Product[] {
+  // Drop nationally OOS products (stateOOS contains all 8 AU states).
+  // Partially OOS (some states) still shows — product is available somewhere.
+  // Constructor.io responses have no stateOOS field, so they pass through unchanged.
+  const inStock = candidates.filter(item => {
+    const oos = (item.data as Record<string, unknown> | undefined)?.stateOOS as Record<string, unknown> | undefined
+    if (!oos) return true
+    return AU_STATES.some(s => !(s in oos))
+  })
+
   // Deduplicate by (name, colour) — collapses size variants into one per colour
   const seen = new Set<string>()
-  const deduplicated = candidates.filter(item => {
+  const deduplicated = inStock.filter(item => {
     const data = item.data as Record<string, unknown> | undefined
     const name = String(item.value ?? item.name ?? '')
     const colour = data?.Colour != null ? String(data.Colour) : ''
