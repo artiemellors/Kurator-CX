@@ -125,6 +125,14 @@ function EditPageContent() {
     const col = collections[activeIdx]
     if (!col) return
 
+    // If the session already has a product pool from the preview fetch and the
+    // user hasn't overridden pivots, show it immediately — no LLM call needed.
+    if (!overridePivots && col.productPool && col.productPool.length > 0) {
+      setProducts(col.productPool)
+      setLoading(false)
+      return
+    }
+
     // Effective pivots: user override or collection defaults
     const effectivePivots = overridePivots ?? col.pivots
     const collectionWithPivots = { ...col, pivots: effectivePivots }

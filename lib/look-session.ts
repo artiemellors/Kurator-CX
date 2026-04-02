@@ -1,10 +1,12 @@
 import type { Outfit, Product } from '@/app/components/OutfitResults'
+import type { CollectionProduct } from '@/app/components/ProductCollections'
 
 export interface CollectionPreview {
   name: string
   description: string
   pivots: string[]
-  products: Product[]  // 3 representative products for tile preview images
+  products: Product[]           // 3 representative products for tile preview images
+  productPool?: CollectionProduct[] // full fetched pool — pre-fills the edit page
 }
 
 export interface LookSession {

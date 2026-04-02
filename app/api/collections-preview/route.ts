@@ -91,13 +91,20 @@ export async function POST(req: NextRequest) {
           calls.map(c => searchKmart((c.args as { query: string }).query, config.categoryFilter))
         )
         return calls.map((c, i) => {
-          const products = fetched[i].slice(0, 15)
+          const allProducts = fetched[i]
+          const products = allProducts.slice(0, 15)
           const si = searchIndex++
-          const tagged = products.map((p, pi) => {
+          // Store full result set so we can return it as productPool
+          allProducts.forEach((p, pi) => {
             const id = `q${si}p${pi}`
             productMap.set(id, p)
-            return { id, name: p.name, price: p.price, ...(p.colour ? { colour: p.colour } : {}) }
           })
+          const tagged = products.map((p, pi) => ({
+            id: `q${si}p${pi}`,
+            name: p.name,
+            price: p.price,
+            ...(p.colour ? { colour: p.colour } : {}),
+          }))
           return {
             id: c.id,
             name: c.name,
@@ -113,16 +120,28 @@ export async function POST(req: NextRequest) {
       collections: Array<{ name: string; description: string; pivots: string[]; product_ids: string[] }>
     }).collections
 
+    // All products fetched across every search call
+    const allFetched = Array.from(productMap.values())
+
     const collections = raw
-      .map(col => ({
-        name: col.name,
-        description: col.description,
-        pivots: Array.isArray(col.pivots) ? col.pivots.slice(0, 4) : [],
-        products: (col.product_ids ?? [])
-          .slice(0, 3)
+      .map(col => {
+        const tileIds = new Set((col.product_ids ?? []).slice(0, 3))
+        const tileProducts = Array.from(tileIds)
           .map(id => productMap.get(id))
-          .filter((p): p is Product => p !== undefined),
-      }))
+          .filter((p): p is Product => p !== undefined)
+        // Pool = everything fetched, excluding the 3 tile picks, deduped by name+colour
+        const tileKeys = new Set(tileProducts.map(p => `${p.name}::${p.colour ?? ''}`))
+        const productPool = allFetched.filter(
+          p => !tileKeys.has(`${p.name}::${p.colour ?? ''}`)
+        )
+        return {
+          name: col.name,
+          description: col.description,
+          pivots: Array.isArray(col.pivots) ? col.pivots.slice(0, 4) : [],
+          products: tileProducts,
+          productPool,
+        }
+      })
       .filter(col => col.products.length > 0)
 
     console.log(`[CollectionsPreview] Done — ${collections.length} collections`)
