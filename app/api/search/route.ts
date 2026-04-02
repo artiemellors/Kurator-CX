@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
                         product_ids: {
                           type: 'array',
                           items: { type: 'string' },
-                          description: 'Exactly 3 product ids chosen to create a colour palette / mood-board feel — NOT an outfit arrangement. Pick from 3 different product categories (e.g. one garment, one accessory, one footwear or bag) with visually distinct, complementary colours. Avoid picking multiple items of the same product type.',
+                          description: 'Exactly 3 product ids chosen to create a colour palette / mood-board feel — NOT an outfit arrangement. Pick products with visually distinct, complementary colours that together read as a cohesive colour story for the collection.',
                         },
                       },
                       required: ['name', 'description', 'pivots', 'product_ids'],
