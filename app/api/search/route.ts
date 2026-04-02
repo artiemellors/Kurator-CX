@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
           tools: [
             {
               name: 'search_kmart',
-              description: "Search Kmart Australia for products. Returns up to 10 products, each with an id, name, price, and colour.",
+              description: "Search Kmart Australia for products. Returns up to 20 products, each with an id, name, price, and colour.",
               parameters: {
                 type: 'object',
                 properties: { query: { type: 'string', description: "Search query, e.g. \"men's black t-shirt\"" } },
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
               const isSearch = c.name === 'search_kmart'
               const label = isSearch ? (c.args as { query: string }).query : (c.args as { collection_id: string }).collection_id
               const allProducts = config.showGenderFilter ? filterProducts(fetched[i], gender, queryIsForKids) : fetched[i]
-              const products = allProducts.slice(0, 10)
+              const products = allProducts.slice(0, 20)
               const si = searchIndex++
               console.log(`[${isSearch ? 'search_kmart' : 'browse_collection'}] "${label}" → ${allProducts.length} total, ${products.length} to AI`)
 
