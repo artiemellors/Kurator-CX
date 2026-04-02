@@ -30,7 +30,8 @@ Search rules:
 - Use short, specific queries — one product type per search call (e.g. "linen shirt", "white sneakers")
 - Make at least 4 search calls to cover the range of product types that fit the theme
 - Browse relevant Kmart collections if any match the theme
-- Once you have 20+ products, call present_products
+- If a search returns 0 results, move on immediately — do not retry variants of the same item
+- Once you have 20+ products across your searches, call present_products straight away
 
 Product selection criteria:
 - All products must feel coherent with the collection theme
@@ -119,7 +120,12 @@ User search: "${query}"`
       },
     })
 
-    if (!result) return Response.json({ products: [] })
+    if (!result) {
+      // Agent hit turn limit without calling present_products — return all found products
+      const fallback = Array.from(productMap.values()).filter(p => !!p.imageUrl)
+      console.log(`[EditProducts] Turn limit reached — falling back to ${fallback.length} found products`)
+      return Response.json({ products: fallback })
+    }
 
     const { product_ids } = result.args as { product_ids: string[] }
     const products = (product_ids ?? [])
