@@ -18,15 +18,19 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
   const [cardWidth, setCardWidth] = useState(0)
 
   const wrapperRef  = useRef<HTMLDivElement>(null)
+  const trackRef    = useRef<HTMLDivElement>(null)
   const touchStart  = useRef<{ x: number; y: number } | null>(null)
   const dirLocked   = useRef<'h' | 'v' | null>(null)
 
-  // Measure container in pixels — avoids unreliable calc(100% - Npx) on flex children
+  // Measure the track container's content width (inside its left padding).
+  // cardWidth = trackWidth - GAP_PX - PEEK_PX so the next card peeks exactly PEEK_PX
+  // from the right edge of the grey overflow-hidden wrapper.
   useEffect(() => {
-    const el = wrapperRef.current
+    const el = trackRef.current
     if (!el) return
     const ro = new ResizeObserver(entries => {
-      setCardWidth(entries[0].contentRect.width - PEEK_PX)
+      const w = entries[0].contentRect.width
+      setCardWidth(w - GAP_PX - PEEK_PX)
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -72,8 +76,9 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
     dirLocked.current  = null
   }
 
-  // All pixel-based — no percentage calc so both mobile and desktop resolve correctly
-  const offset     = cardWidth > 0 ? -activeIdx * (cardWidth + GAP_PX) + (dragging ? dragDelta : 0) : 0
+  // step = cardWidth + GAP_PX = trackWidth - PEEK_PX (snaps so next card peeks PEEK_PX)
+  const step       = cardWidth + GAP_PX
+  const offset     = cardWidth > 0 ? -activeIdx * step + (dragging ? dragDelta : 0) : 0
   const translateX = `${offset}px`
 
   return (
@@ -87,6 +92,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
     >
       {/* Track container — padding on all sides except right (next card peeks to edge) */}
       <div
+        ref={trackRef}
         className="relative grow"
         style={{ padding: '12px 0 12px 12px' }}
         onTouchStart={onTouchStart}
