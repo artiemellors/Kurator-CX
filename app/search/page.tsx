@@ -101,8 +101,9 @@ function SearchResults() {
   const [refinements, setRefinements]         = useState<string[]>([])
   const [products, setProducts]               = useState<CollectionProduct[] | null>(null)
   const [productsLoading, setProductsLoading] = useState(false)
-  const [bundleLoading, setBundleLoading]     = useState(false)
-  const [collections, setCollections]         = useState<CollectionPreview[]>([])
+  const [bundleLoading, setBundleLoading]         = useState(false)
+  const [collectionsLoading, setCollectionsLoading] = useState(false)
+  const [collections, setCollections]             = useState<CollectionPreview[]>([])
   const [error, setError]                     = useState<string | null>(null)
   const classifiedCategoryRef = useRef<string>('outfits')
   const abortRef          = useRef<AbortController | null>(null)
@@ -129,6 +130,7 @@ function SearchResults() {
 
     setProductsLoading(true)
     setBundleLoading(true)
+    setCollectionsLoading(true)
     setOutfits(null)
     setRefinements([])
     setCollections([])
@@ -173,7 +175,13 @@ function SearchResults() {
     if (cached) {
       setOutfits(cached.outfits)
       setRefinements(cached.refinements)
-      if (cached.collections.length > 0) setCollections(cached.collections)
+      if (cached.collections.length > 0) {
+        setCollections(cached.collections)
+        setCollectionsLoading(false)
+      } else {
+        // Session predates collection split — fetch previews now without re-running outfit search
+        fetchCollectionPreviews(searchQ, controller.signal)
+      }
       setBundleLoading(false)
     } else {
       fetchBundle(searchQ, controller.signal)
@@ -182,6 +190,7 @@ function SearchResults() {
   }
 
   async function fetchCollectionPreviews(searchQ: string, signal: AbortSignal) {
+    setCollectionsLoading(true)
     try {
       const res = await fetch('/api/collections-preview', {
         method: 'POST',
@@ -199,6 +208,8 @@ function SearchResults() {
       if (!signal.aborted && (err as Error).name !== 'AbortError') {
         console.error('[CollectionsPreview]', err)
       }
+    } finally {
+      if (!signal.aborted) setCollectionsLoading(false)
     }
   }
 
@@ -299,7 +310,7 @@ function SearchResults() {
 
   // Only reserve a tile slot if the bundle is loading or succeeded
   const showTileSlot  = bundleLoading || !!outfits
-  const showEditSlot  = bundleLoading || collections.length > 0
+  const showEditSlot  = bundleLoading || collectionsLoading || collections.length > 0
   const insertPos     = Math.min(TILE_INSERT_POSITION, products?.length ?? 0)
 
   const gridItems: GridItem[] = (() => {
