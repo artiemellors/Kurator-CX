@@ -114,11 +114,11 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
               <div
                 key={i}
                 className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
-                           flex flex-col overflow-hidden shrink-0"
+                           relative flex flex-col shrink-0"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
                 {/* Image grid — grow fills the card height passed down from h-full track */}
-                <div className="px-4 pt-4 pb-4 grow">
+                <div className="px-4 pt-4 pb-4 grow overflow-hidden rounded-[12px]">
                   <div className="flex gap-2 h-full">
                     {/* Large left image */}
                     <div className="relative flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
@@ -130,16 +130,6 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
                           style={{ animation: 'imgFadeIn 220ms ease-out' }}
                         />
                       )}
-                      {/* CTA floats over bottom-left of large image */}
-                      <button
-                        onClick={() => onExplore(i)}
-                        className="absolute bottom-3 left-3 px-4 py-2 rounded-full bg-white
-                                   border border-[#1768b0] text-[#1768b0] text-[12px] font-semibold
-                                   shadow-sm transition-all duration-200 z-10 whitespace-nowrap
-                                   hover:bg-[#1768b0] hover:text-white"
-                      >
-                        Shop {col.name}
-                      </button>
                     </div>
                     {/* Two stacked right images */}
                     <div className="flex-[2] flex flex-col gap-2">
@@ -158,6 +148,16 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
                     </div>
                   </div>
                 </div>
+                {/* CTA — absolute relative to card so it never clips on long names */}
+                <button
+                  onClick={() => onExplore(i)}
+                  className="absolute bottom-4 left-4 px-4 py-2 rounded-full bg-white
+                             border border-[#1768b0] text-[#1768b0] text-[12px] font-semibold
+                             shadow-sm transition-all duration-200 z-10 whitespace-nowrap
+                             hover:bg-[#1768b0] hover:text-white"
+                >
+                  Shop {col.name}
+                </button>
               </div>
             )
           })}
