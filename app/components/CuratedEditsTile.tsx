@@ -50,7 +50,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
         </div>
 
         {/* Image grid */}
-        <div className="px-4 mt-3 grow min-h-[150px] sm:min-h-0">
+        <div className="px-4 mt-3 pb-4 grow min-h-[150px] sm:min-h-0">
           <div className="flex gap-2 h-[150px] sm:h-full">
             {/* Large left — img absolute so natural dimensions don't inflate layout height */}
             <div className="relative flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
@@ -63,6 +63,16 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
                   style={{ animation: 'imgFadeIn 220ms ease-out' }}
                 />
               )}
+              {/* CTA floats over the bottom-left of the large image */}
+              <button
+                onClick={() => onExplore(activeIdx)}
+                className="absolute bottom-3 left-3 px-4 py-2 rounded-full bg-white
+                           border border-[#1768b0] text-[#1768b0] text-[12px] font-semibold
+                           shadow-sm transition-all duration-200 z-10
+                           hover:bg-[#1768b0] hover:text-white"
+              >
+                Explore the edit
+              </button>
             </div>
             {/* Two stacked right — slots always rendered so layout stays consistent */}
             <div className="flex-[2] flex flex-col gap-2">
@@ -83,17 +93,6 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
           </div>
         </div>
 
-        {/* CTA — inline left-aligned below images */}
-        <div className="px-4 pt-3 pb-4 shrink-0">
-          <button
-            onClick={() => onExplore(activeIdx)}
-            className="px-5 py-2.5 rounded-full border border-[#1768b0] text-[#1768b0]
-                       text-[13px] font-semibold transition-all duration-200
-                       hover:bg-[#1768b0] hover:text-white"
-          >
-            Explore the edit
-          </button>
-        </div>
 
       </div>
     </div>
