@@ -169,7 +169,7 @@ function LookPageContent() {
       const res = await fetch('/api/refine', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ refinement: trimmed, outfit: activeOutfit, originalQuery: q }),
+        body:    JSON.stringify({ refinement: trimmed, outfit: activeOutfit, originalQuery: q, category }),
         signal:  controller.signal,
       })
 

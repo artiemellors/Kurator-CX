@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { searchKmart, browseCollection, Product } from '@/lib/kmart-scraper'
 import type { Outfit, OutfitItem, Product as OutfitProduct } from '@/app/components/OutfitResults'
 import { runAgentLoop } from '@/lib/llm-agent'
+import { getCategoryConfig } from '@/lib/category-config'
 
 function buildOutfitContext(outfit: Outfit): string {
   const lines = [`Outfit name: "${outfit.name}"`]
@@ -20,11 +21,13 @@ function buildOutfitContext(outfit: Outfit): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { refinement, outfit, originalQuery } = await req.json() as {
+  const { refinement, outfit, originalQuery, category } = await req.json() as {
     refinement: string
     outfit: Outfit
     originalQuery: string
+    category?: string
   }
+  const config = getCategoryConfig(category ?? 'outfits')
 
   if (!refinement?.trim() || !outfit) {
     return Response.json({ error: 'Missing refinement or outfit' }, { status: 400 })
@@ -147,7 +150,7 @@ Rules:
             const fetched = await Promise.all(
               calls.map(c =>
                 c.name === 'search_kmart'
-                  ? searchKmart((c.args as { query: string }).query)
+                  ? searchKmart((c.args as { query: string }).query, config.categoryFilter)
                   : browseCollection((c.args as { collection_id: string }).collection_id)
               )
             )

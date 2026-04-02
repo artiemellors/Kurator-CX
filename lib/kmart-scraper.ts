@@ -25,7 +25,7 @@ function mapProducts(candidates: Record<string, unknown>[]): Product[] {
     return true
   })
 
-  return deduplicated.slice(0, 24).map((item, i) => {
+  return deduplicated.map((item, i) => {
     const data = item.data as Record<string, unknown> | undefined
     const rawUrl = data?.url != null ? String(data.url)
       : item.url != null ? String(item.url)
@@ -72,6 +72,9 @@ function mapProducts(candidates: Record<string, unknown>[]): Product[] {
   })
 }
 
+// NOTE: fetchCollections and browseCollection always use the Constructor.io endpoint.
+// The vaisc proxy is search-only — it has no collection-browse equivalent.
+// Both endpoints share the same API key so they stay in sync.
 export async function fetchCollections(keywords: string[]): Promise<Collection[]> {
   const url =
     `https://ac.cnstrc.com/browse/collections` +
@@ -123,12 +126,13 @@ export async function searchKmart(query: string, categoryFilter = ''): Promise<P
   console.log(`\n[Search${useVaisc ? '/vaisc' : ''}] ${query}`)
   const res = await fetch(url, { headers: { Accept: 'application/json' } })
   if (!res.ok) {
-    console.log(`[Search] HTTP ${res.status} — returning empty`)
+    const body = useVaisc ? await res.text().catch(() => '') : ''
+    console.log(`[Search${useVaisc ? '/vaisc' : ''}] HTTP ${res.status} — returning empty${body ? `: ${body.slice(0, 200)}` : ''}`)
     return []
   }
   const json = await res.json() as Record<string, unknown>
   const candidates = ((json?.response as Record<string, unknown>)?.results ?? []) as Record<string, unknown>[]
   const products = mapProducts(candidates)
-  console.log(`[Search] ${products.length} products for "${query}"`)
+  console.log(`[Search${useVaisc ? '/vaisc' : ''}] ${products.length} products for "${query}"`)
   return products
 }
