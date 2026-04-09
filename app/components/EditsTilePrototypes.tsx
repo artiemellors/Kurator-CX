@@ -70,10 +70,13 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
                 <div className="px-4 pt-4 pb-3 shrink-0">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[#1768b0]/80">
-                      Curated edit
-                    </p>
+                  <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[rgba(26,26,26,0.4)] mb-2">
+                    Curated edit
+                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a] tracking-[-0.3px]">
+                      {col.name}
+                    </h3>
                     <button
                       onClick={() => onExplore(i)}
                       className="shrink-0 flex items-center gap-1 text-[12px] font-normal
@@ -83,15 +86,6 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                       <i className="fa-solid fa-arrow-right text-[9px]" />
                     </button>
                   </div>
-                  <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a]
-                                 tracking-[-0.3px] mb-1.5">
-                    {col.name}
-                  </h3>
-                  {col.description && (
-                    <p className="hidden sm:block text-[13px] text-[rgba(26,26,26,0.55)] leading-[1.55] line-clamp-1">
-                      {col.description.split(/[.!?]/)[0]}
-                    </p>
-                  )}
                 </div>
 
                 <div className="grow min-h-0 flex gap-2 px-4 pb-4">
@@ -100,7 +94,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                       {j === 0 && <ProtoLabel letter="A" />}
                       {p.imageUrl && (
                         <img src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full object-cover object-center" />
+                          className="absolute inset-0 w-full h-full object-contain" />
                       )}
                     </div>
                   ))}
@@ -147,21 +141,21 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                            shrink-0 flex flex-col p-4 gap-3"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
-                <div className="flex items-start justify-between gap-3 shrink-0">
-                  <div>
-                    <p className="text-[10px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)] mb-0.5">
-                      Shop the edit
-                    </p>
-                    <h3 className="font-bold text-[15px] leading-[1.25] text-[#1a1a1a]">{col.name}</h3>
+                <div className="shrink-0">
+                  <p className="text-[10px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)] mb-1">
+                    Shop the edit
+                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-bold text-[20px] leading-[1.25] text-[#1a1a1a]">{col.name}</h3>
+                    <button
+                      onClick={() => onExplore(i)}
+                      className="shrink-0 text-[11px] font-semibold text-[#1768b0]
+                                 border border-[#1768b0] rounded-full px-3 py-1.5 whitespace-nowrap
+                                 hover:bg-[#1768b0] hover:text-white transition-all"
+                    >
+                      See all
+                    </button>
                   </div>
-                  <button
-                    onClick={() => onExplore(i)}
-                    className="shrink-0 text-[11px] font-semibold text-[#1768b0]
-                               border border-[#1768b0] rounded-full px-3 py-1.5 whitespace-nowrap
-                               hover:bg-[#1768b0] hover:text-white transition-all"
-                  >
-                    See all
-                  </button>
                 </div>
 
                 <div className="grow min-h-0 flex gap-2">
@@ -170,7 +164,7 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                       {j === 0 && <ProtoLabel letter="B" />}
                       {p.imageUrl && (
                         <img src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full object-cover object-center" />
+                          className="absolute inset-0 w-full h-full object-contain" />
                       )}
                     </div>
                   ))}

@@ -104,7 +104,7 @@ export function KmartProductCard({
             <img
               src={p.imageUrl}
               alt={p.name}
-              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+              className="absolute inset-0 w-full h-full object-contain transition-opacity duration-500"
               style={{
                 opacity: showAlt && hasAlt ? 0 : 1,
                 animation: 'imgFadeIn 300ms ease-out',
@@ -115,7 +115,7 @@ export function KmartProductCard({
             <img
               src={p.altImageUrl}
               alt={p.name}
-              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+              className="absolute inset-0 w-full h-full object-contain transition-opacity duration-500"
               style={{ opacity: showAlt ? 1 : 0 }}
             />
           )}
