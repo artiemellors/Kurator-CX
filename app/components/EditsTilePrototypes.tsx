@@ -138,10 +138,10 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                     </p>
                     <button
                       onClick={() => onExplore(i)}
-                      className="shrink-0 flex items-center gap-1 text-[12px] font-semibold
+                      className="shrink-0 flex items-center gap-1 text-[12px] font-normal
                                  text-[#1768b0] hover:underline underline-offset-2 transition-all"
                     >
-                      Shop the edit
+                      Explore
                       <i className="fa-solid fa-arrow-right text-[9px]" />
                     </button>
                   </div>
@@ -150,7 +150,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                     {col.name}
                   </h3>
                   {col.description && (
-                    <p className="text-[13px] text-[rgba(26,26,26,0.55)] leading-[1.55] line-clamp-1">
+                    <p className="hidden sm:block text-[13px] text-[rgba(26,26,26,0.55)] leading-[1.55] line-clamp-1">
                       {col.description.split(/[.!?]/)[0]}
                     </p>
                   )}
@@ -231,7 +231,7 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                 {/* Two images — fill remaining card height */}
                 <div className="grow min-h-0 flex gap-2">
                   {images.map((p, j) => (
-                    <div key={j} className="relative flex-1 rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                    <div key={j} className="relative flex-1 aspect-[4/5] sm:aspect-auto rounded-[8px] overflow-hidden bg-[#F4F5F6]">
                       {j === 0 && <ProtoLabel letter="B" />}
                       {p.imageUrl && (
                         <img src={p.imageUrl} alt={p.name}
