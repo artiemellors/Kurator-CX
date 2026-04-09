@@ -188,13 +188,13 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
 // ── Proto C: Hero tile ────────────────────────────────────────────────────────
 
 export function ProtoC({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
-  const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length, 0, 0)
+  const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging, gapPx } = useSwipe(collections.length, 0, GAP_PX)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent flex flex-col group min-h-[240px] sm:min-h-0">
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#0E3E68] sm:bg-transparent flex flex-col group min-h-[240px] sm:min-h-0">
       <div
         ref={trackRef}
-        className="relative grow pt-3 pb-3 pl-3 sm:p-0 overflow-hidden sm:rounded-[12px]"
+        className="relative grow p-3 pr-7 sm:p-0 overflow-hidden sm:rounded-[12px]"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -202,6 +202,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
         <div
           className="flex h-full"
           style={{
+            gap: `${gapPx}px`,
             transform: `translateX(${offset}px)`,
             transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
           }}
