@@ -94,7 +94,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                       {j === 0 && <ProtoLabel letter="A" />}
                       {p.imageUrl && (
                         <img src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full object-contain" />
+                          className="absolute inset-0 w-full h-full object-cover" />
                       )}
                     </div>
                   ))}
@@ -164,7 +164,7 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                       {j === 0 && <ProtoLabel letter="B" />}
                       {p.imageUrl && (
                         <img src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full object-contain" />
+                          className="absolute inset-0 w-full h-full object-cover" />
                       )}
                     </div>
                   ))}

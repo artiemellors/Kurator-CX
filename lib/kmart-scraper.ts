@@ -52,6 +52,7 @@ function mapProducts(candidates: Record<string, unknown>[]): Product[] {
           : item.image != null ? String(item.image)
           : item.thumbnail != null ? String(item.thumbnail)
           : undefined
+    const normalizedImageUrl = imageUrl?.replace('transform:extend,', 'transform:fill,')
     const altImageUrl = (() => {
       const altImages = data?.altImages
       if (!Array.isArray(altImages) || altImages.length === 0) return undefined
@@ -77,7 +78,7 @@ function mapProducts(candidates: Record<string, unknown>[]): Product[] {
       productUrl: rawUrl != null
         ? rawUrl.startsWith('http') ? rawUrl : `https://www.kmart.com.au${rawUrl}`
         : undefined,
-      imageUrl,
+      imageUrl: normalizedImageUrl,
       altImageUrl,
     }
   })
