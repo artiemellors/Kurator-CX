@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 
 export interface CollectionProduct {
   name: string
@@ -29,10 +30,22 @@ function SkeletonCard() {
   )
 }
 
-export function KmartProductCard({ p, animDelay }: { p: CollectionProduct; animDelay: number }) {
+export function KmartProductCard({
+  p,
+  animDelay,
+  searchQuery,
+  category,
+}: {
+  p: CollectionProduct
+  animDelay: number
+  /** When set, clicking navigates to the internal /product page instead of Kmart.com.au */
+  searchQuery?: string
+  category?: string
+}) {
+  const router = useRouter()
   const hasAlt = !!p.altImageUrl
   const [showAlt, setShowAlt] = useState(false)
-  const cardRef = useRef<HTMLAnchorElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
   // Stable random delay per card (150–550ms) so cards in the same row don't flip together
   const delayRef = useRef(Math.floor(Math.random() * 400) + 150)
 
@@ -62,13 +75,25 @@ export function KmartProductCard({ p, animDelay }: { p: CollectionProduct; animD
     }
   }, [hasAlt])
 
+  function handleClick() {
+    if (!searchQuery) return
+    const params = new URLSearchParams({
+      q: searchQuery,
+      category: category ?? 'outfits',
+      name: p.name,
+      price: p.price,
+      ...(p.imageUrl  ? { image: p.imageUrl }   : {}),
+      ...(p.colour    ? { colour: p.colour }     : {}),
+    })
+    router.push(`/product?${params.toString()}`)
+  }
+
   return (
-    <a
+    <div
       ref={cardRef}
-      href={p.productUrl ?? '#'}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex flex-col"
+      role={searchQuery ? 'button' : undefined}
+      onClick={searchQuery ? handleClick : undefined}
+      className={`flex flex-col${searchQuery ? ' cursor-pointer' : ''}`}
       style={{ animation: `fadeUp 300ms ${animDelay}ms ease both` }}
       onMouseEnter={() => hasAlt && setShowAlt(true)}
       onMouseLeave={() => hasAlt && setShowAlt(false)}
@@ -108,7 +133,7 @@ export function KmartProductCard({ p, animDelay }: { p: CollectionProduct; animD
           {p.price.startsWith('$') ? p.price.slice(1) : p.price}
         </p>
       </div>
-    </a>
+    </div>
   )
 }
 

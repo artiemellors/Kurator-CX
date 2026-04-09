@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { loadLookSession, type CollectionPreview } from '@/lib/look-session'
 import type { Outfit } from '@/app/components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
+import CuratedLooksTile from '../components/CuratedLooksTile'
 
 function SkeletonProductCard() {
   return (
@@ -20,72 +21,6 @@ function SkeletonProductCard() {
   )
 }
 
-function OutfitCallout({ outfit, onViewLook }: { outfit: Outfit; onViewLook: () => void }) {
-  const items = outfit.items.slice(0, 6)
-
-  return (
-    <div className="mb-10 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] px-3 py-3">
-      <div className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06] overflow-hidden">
-        {/* Header row */}
-        <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-black/[0.05]">
-          <div>
-            <p className="text-[10px] tracking-[1.2px] uppercase font-semibold text-[rgba(26,26,26,0.4)] mb-0.5">
-              Styled Look
-            </p>
-            <p className="text-[14px] font-semibold text-[#1a1a1a] leading-snug">
-              {outfit.name}
-            </p>
-          </div>
-          <button
-            onClick={onViewLook}
-            className="shrink-0 flex items-center gap-1.5 text-[12px] font-semibold
-                       text-[#1768b0] hover:text-[#1254a0] transition-colors"
-          >
-            View the look
-            <i className="fa-solid fa-arrow-right text-[10px]" />
-          </button>
-        </div>
-
-        {/* Horizontal product strip */}
-        <div className="flex overflow-x-auto scrollbar-hide gap-2 px-3 py-3">
-          {items.map((item, i) => {
-            const product = item.alternatives[0]
-            if (!product?.imageUrl) return null
-            return (
-              <a
-                key={i}
-                href={product.productUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 w-[120px] sm:w-[140px] group"
-              >
-                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[8px] bg-[#f9f9f9]
-                                border border-black/[0.06] mb-1.5">
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <p className="text-[10px] text-[rgba(26,26,26,0.4)] uppercase tracking-[0.8px] mb-0.5 truncate">
-                  {item.category}
-                </p>
-                <p className="text-[12px] font-semibold text-[#1a1a1a]">{product.price}</p>
-              </a>
-            )
-          })}
-        </div>
-
-        {/* Description */}
-        {outfit.description && (
-          <p className="px-4 pb-4 text-[12px] text-[rgba(26,26,26,0.5)] leading-[1.6] italic">
-            &ldquo;{outfit.description}&rdquo;
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function EditPageContent() {
   const searchParams = useSearchParams()
@@ -314,14 +249,6 @@ function EditPageContent() {
           </div>
         )}
 
-        {/* Outfit callout */}
-        {outfits.length > 0 && (
-          <OutfitCallout
-            outfit={outfits[0]}
-            onViewLook={() => router.push(`/look?q=${encodeURIComponent(q)}&idx=0&category=${category}`)}
-          />
-        )}
-
         {/* Error */}
         {error && (
           <p className="text-sm text-red-600 bg-white border border-red-200 rounded px-4 py-3 mb-6">
@@ -360,9 +287,19 @@ function EditPageContent() {
             </div>
           )}
           {!loading && products && products.map((p, i) => (
-            <KmartProductCard key={`p-${i}`} p={p} animDelay={(i % 10) * 30} />
+            <KmartProductCard key={`p-${i}`} p={p} animDelay={(i % 10) * 30} searchQuery={q} category={category} />
           ))}
         </div>
+
+        {/* Bundle tile — curated looks from the same search session */}
+        {outfits.length > 0 && (
+          <div className="mt-12">
+            <CuratedLooksTile
+              outfits={outfits}
+              onExplore={(idx) => router.push(`/look?q=${encodeURIComponent(q)}&idx=${idx}&category=${category}`)}
+            />
+          </div>
+        )}
 
       </main>
     </div>

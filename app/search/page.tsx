@@ -11,10 +11,10 @@ import { saveLookSession, loadLookSession, type CollectionPreview } from '@/lib/
 import { detectCategory } from '@/lib/detect-category'
 
 
-// Where the CuratedLooksTile is inserted in the product grid (0-indexed)
-const TILE_INSERT_POSITION = 4
-// Where the CuratedEditsTile is inserted (after the looks tile + products)
-const EDITS_TILE_INSERT_POSITION = 12
+// Where the CuratedEditsTile (collections) is inserted — comes first
+const EDITS_TILE_INSERT_POSITION = 4
+// Where the CuratedLooksTile (bundle) is inserted — comes second
+const TILE_INSERT_POSITION = 14
 
 type GridItem =
   | { type: 'product'; data: CollectionProduct }
@@ -316,29 +316,23 @@ function SearchResults() {
   // Only reserve a tile slot if the bundle is loading or succeeded
   const showTileSlot  = bundleLoading || !!outfits
   const showEditSlot  = bundleLoading || collectionsLoading || collections.length > 0
-  const insertPos     = Math.min(TILE_INSERT_POSITION, products?.length ?? 0)
 
   const gridItems: GridItem[] = (() => {
     if (!products || products.length === 0) return []
 
     const productItems = products.map(p => ({ type: 'product' as const, data: p }))
 
-    // Build the flat list with the looks tile at insertPos
-    const withLooksTile: GridItem[] = [
-      ...productItems.slice(0, showTileSlot ? insertPos : productItems.length),
-      ...(showTileSlot ? [{ type: 'tile' as const }] : []),
-      ...(showTileSlot ? productItems.slice(insertPos) : []),
-    ]
+    // Insert edits tile (collections) first
+    const editsPos = Math.min(EDITS_TILE_INSERT_POSITION, productItems.length)
+    const withEditsTile: GridItem[] = showEditSlot
+      ? [...productItems.slice(0, editsPos), { type: 'edits-tile' as const }, ...productItems.slice(editsPos)]
+      : [...productItems]
 
-    if (!showEditSlot) return withLooksTile
-
-    // Insert edits tile after EDITS_TILE_INSERT_POSITION items in the final list
-    const editsPos = Math.min(EDITS_TILE_INSERT_POSITION, withLooksTile.length)
-    return [
-      ...withLooksTile.slice(0, editsPos),
-      { type: 'edits-tile' as const },
-      ...withLooksTile.slice(editsPos),
-    ]
+    // Then insert looks tile (bundle) after more products
+    const tilePos = Math.min(TILE_INSERT_POSITION, withEditsTile.length)
+    return showTileSlot
+      ? [...withEditsTile.slice(0, tilePos), { type: 'tile' as const }, ...withEditsTile.slice(tilePos)]
+      : withEditsTile
   })()
 
   const showSkeletons = productsLoading
@@ -399,7 +393,7 @@ function SearchResults() {
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6 grid-flow-dense">
           {showSkeletons && (
             <>
-              {Array.from({ length: insertPos || 4 }).map((_, i) => <SkeletonCard key={`pre-${i}`} />)}
+              {Array.from({ length: EDITS_TILE_INSERT_POSITION }).map((_, i) => <SkeletonCard key={`pre-${i}`} />)}
               <SkeletonTile />
               {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={`post-${i}`} />)}
             </>
@@ -422,6 +416,8 @@ function SearchResults() {
             }
             return (
               <KmartProductCard
+                searchQuery={q}
+                category={classifiedCategoryRef.current}
                 key={`p-${i}`}
                 p={item.data}
                 animDelay={(i % 8) * 35}
