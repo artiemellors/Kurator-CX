@@ -144,7 +144,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                   </h3>
                   {col.description && (
                     <p className="text-[13px] text-[rgba(26,26,26,0.55)] leading-[1.55] line-clamp-1">
-                      {col.description}
+                      {col.description?.split(/[.!?]/)[0]}
                     </p>
                   )}
                 </div>
@@ -265,7 +265,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group"
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group self-start"
          style={{ padding: '12px 0 12px 12px' }}>
       <div
         ref={trackRef}
@@ -302,7 +302,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
                   <Badge label="C — Hero tile" />
                   <div className="flex items-end justify-between gap-3">
                     <h3 className="font-bold text-[18px] sm:text-[22px] leading-[1.2] text-white tracking-[-0.2px]">
-                      {col.name}
+                      {col.name} Edit
                     </h3>
                     <button
                       onClick={() => onExplore(i)}
@@ -313,85 +313,6 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
                     </button>
                   </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-        <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
-      </div>
-    </div>
-  )
-}
-
-// ── Proto D: Colour surface only ──────────────────────────────────────────────
-// Identical layout to the current tile. Only the background hue changes.
-// Tests whether surface colour alone is enough to differentiate.
-
-export function ProtoD({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
-  const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
-
-  return (
-    <div
-      className="col-span-2 flex flex-col rounded-[16px] overflow-hidden group min-h-[260px] sm:min-h-0"
-      style={{ background: 'rgba(23,104,176,0.08)', padding: '12px 0 12px 12px' }}
-    >
-      <div
-        ref={trackRef}
-        className="relative grow"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
-        <div
-          className="flex h-full"
-          style={{
-            gap: `${GAP_PX}px`,
-            transform: `translateX(${offset}px)`,
-            transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
-          }}
-        >
-          {collections.map((col, i) => {
-            const images = col.products.filter(p => p.imageUrl).slice(0, 3)
-            return (
-              <div
-                key={i}
-                className="bg-white rounded-[12px] border-[1.5px] border-[#1768b0]/[0.15]
-                           relative flex flex-col shrink-0"
-                style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
-              >
-                {/* Badge inside card */}
-                <div className="px-4 pt-4">
-                  <Badge label="D — Tinted" />
-                </div>
-                <div className="px-4 pt-2 pb-14 grow overflow-hidden">
-                  <div className="flex gap-2 h-full">
-                    <div className="relative flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
-                      {images[0]?.imageUrl && (
-                        <img src={images[0].imageUrl} alt={images[0].name}
-                          className="absolute inset-0 w-full h-full object-cover object-center" />
-                      )}
-                    </div>
-                    <div className="flex-[2] flex flex-col gap-2">
-                      {[0, 1].map(j => (
-                        <div key={j} className="relative flex-1 rounded-[10px] overflow-hidden bg-[#F4F5F6]">
-                          {images[j + 1]?.imageUrl && (
-                            <img src={images[j + 1].imageUrl} alt={images[j + 1].name}
-                              className="absolute inset-0 w-full h-full object-cover object-center" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => onExplore(i)}
-                  className="absolute bottom-4 left-4 px-4 py-2 rounded-full bg-white
-                             border border-[#1768b0] text-[#1768b0] text-[12px] font-semibold
-                             shadow-sm transition-all z-10 whitespace-nowrap
-                             hover:bg-[#1768b0] hover:text-white"
-                >
-                  Shop {col.name}
-                </button>
               </div>
             )
           })}
