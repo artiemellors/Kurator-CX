@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         const result = await runAgentLoop({
           system: SYSTEM_PROMPT,
           userMessage: query,
-          maxTokens: 8192,
+          maxTokens: 4096,
           tools: [
             {
               name: 'search_kmart',

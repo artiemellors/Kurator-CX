@@ -100,7 +100,7 @@ Step 2 — in your FIRST response, call search_kmart and/or browse_collection fo
 - Use browse_collection when a collection id is a strong match
 - Use search_kmart for specific product types
 
-Step 3 — once results are in, call present_outfits. Reference products by id only. Provide 2–4 named outfit pairings. Build as complete an outfit as the results allow — aim for Top (or Dress), Bottom, Footwear, and an Accessory, adding Outerwear when the occasion warrants it. Only create a slot if you have relevant products for it — do not file a clothing item or a second pair of shoes as an accessory. When selecting alternatives within each slot, apply the same functional requirements you established in Step 1 — choose options that suit the occasion, not just the most visually appealing. Group items by category (Top, Bottom, Footwear, Accessory, Bag, Outerwear, etc.) with 3–5 alternatives per slot. Use colour to build cohesive looks. You MUST call present_outfits even if some searches returned no results. Do not use emojis in outfit names or descriptions.
+Step 3 — call present_outfits immediately once the first round of results is in. Do NOT call search_kmart or browse_collection again. Reference products by id only. Provide 2–3 named outfit pairings. Build as complete an outfit as the results allow — aim for Top (or Dress), Bottom, Footwear, and an Accessory, adding Outerwear when the occasion warrants it. Only create a slot if you have relevant products for it — do not file a clothing item or a second pair of shoes as an accessory. When selecting alternatives within each slot, apply the same functional requirements you established in Step 1. Group items by category (Top, Bottom, Footwear, Accessory, Bag, Outerwear, etc.) with 2–3 alternatives per slot. Use colour to build cohesive looks. The first alternative in each slot must not appear as the first alternative in the same slot in any other outfit — prioritise variety across looks. You MUST call present_outfits even if some searches returned no results. Do not use emojis in outfit names or descriptions.
 
 Gender and age rules — strictly enforce:
 - Never mix men's and women's clothing in the same outfit
@@ -204,7 +204,7 @@ Step 2 — in your FIRST response, fire ALL searches at once (4–5 calls). Neve
 - Apply any colour or style cues from the query as modifiers on soft furnishing searches (e.g. "sage green cushion", "coastal rug") — not on furniture or structural pieces
 - Use browse_collection when a collection id is a strong match
 
-Step 3 — once results are in, call present_outfits. Reference products by id only. Provide 2–4 named room looks. For each look, group items by room element (Rug, Cushions, Lighting, Throws, Vase, Storage, etc.) with 3–5 alternatives per slot. When selecting alternatives, maintain the mood and functional coherence you established in Step 1. Build cohesive colour stories. Do not use emojis in look names or descriptions.`,
+Step 3 — call present_outfits immediately once the first round of results is in. Do NOT call search_kmart or browse_collection again. Reference products by id only. Provide 2–3 named room looks. For each look, group items by room element (Rug, Cushions, Lighting, Throws, Vase, Storage, etc.) with 2–3 alternatives per slot. When selecting alternatives, maintain the mood and functional coherence you established in Step 1. Build cohesive colour stories. The first alternative in each slot must not appear as the first alternative in the same slot in any other look — prioritise variety across looks. Do not use emojis in look names or descriptions.`,
   // No category filter — Constructor.io's taxonomy doesn't cleanly map to top-level
   // names like "Furniture", so filtering causes false negatives (e.g. coffee tables
   // disappearing). The AI system prompt already restricts searches to home products.
@@ -286,7 +286,7 @@ Use this reasoning to decide which specific product types to search for — not 
 Step 2 — in your FIRST response, fire ALL searches at once (4–5 calls). Never make just 1 search.
 - Use browse_collection when a collection id is a strong match
 
-Step 3 — once results are in, call present_outfits. Reference products by id only. Provide 2–4 named kitchen sets. For each set, group items by type (Cookware, Utensils, Tableware, Storage, Appliance, etc.) with 3–5 alternatives per slot. When selecting alternatives, apply the same functional and aesthetic logic from Step 1. Build cohesive sets by colour and material. Do not use emojis in set names or descriptions.`,
+Step 3 — call present_outfits immediately once the first round of results is in. Do NOT call search_kmart or browse_collection again. Reference products by id only. Provide 2–3 named kitchen sets. For each set, group items by type (Cookware, Utensils, Tableware, Storage, Appliance, etc.) with 2–3 alternatives per slot. When selecting alternatives, apply the same functional and aesthetic logic from Step 1. Build cohesive sets by colour and material. The first alternative in each slot must not appear as the first alternative in the same slot in any other set — prioritise variety across sets. Do not use emojis in set names or descriptions.`,
   // No category filter — the AI system prompt restricts searches to kitchen/dining
   // products; a filter adds no benefit and risks blocking valid results.
   categoryFilter: '',
@@ -366,7 +366,7 @@ Step 2 — in your FIRST response, call search_kmart and/or browse_collection fo
 - Use browse_collection when a collection id is a strong match
 - Use search_kmart for specific product types
 
-Step 3 — once results are in, call present_outfits. Reference products by id only. Provide 2–4 named party packs. For each pack, group items by category (Decorations, Tableware, Balloons, Costumes, Activities, etc.) with 3–5 alternatives per slot. When selecting alternatives, maintain the theme coherence you established in Step 1. Build cohesive packs by theme and colour. You MUST call present_outfits even if some searches returned no results. Do not use emojis in pack names or descriptions.`,
+Step 3 — call present_outfits immediately once the first round of results is in. Do NOT call search_kmart or browse_collection again. Reference products by id only. Provide 2–3 named party packs. For each pack, group items by category (Decorations, Tableware, Balloons, Costumes, Activities, etc.) with 2–3 alternatives per slot. When selecting alternatives, maintain the theme coherence you established in Step 1. Build cohesive packs by theme and colour. The first alternative in each slot must not appear as the first alternative in the same slot in any other pack — prioritise variety across packs. You MUST call present_outfits even if some searches returned no results. Do not use emojis in pack names or descriptions.`,
   // filters[Category][]=Balloons, Decorations, Candles & Toppers, Party Plates & Bowls,
   //   Party Napkins, Party Cups, Party Cutlery, Party Serveware & Accessories,
   //   Party Favours & Glow, Table Decor, Loots Bags & Invites, Pretend Play & Dress Up,
@@ -453,7 +453,7 @@ Step 2 — in your FIRST response, call search_kmart and/or browse_collection fo
 - Use browse_collection when a collection id is a strong match
 - Use search_kmart for specific product types
 
-Step 3 — once results are in, call present_outfits. Reference products by id only. Provide 2–3 named Easter sets. For each set, group items by category (Decorations, Tableware, Baskets, Activities, etc.) with 3–5 alternatives per slot. When selecting alternatives, apply the same functional and aesthetic reasoning from Step 1. Favour pastel palettes and seasonal items where appropriate. You MUST call present_outfits even if some searches returned no results. Do not use emojis in set names or descriptions.`,
+Step 3 — call present_outfits immediately once the first round of results is in. Do NOT call search_kmart or browse_collection again. Reference products by id only. Provide 2–3 named Easter sets. For each set, group items by category (Decorations, Tableware, Baskets, Activities, etc.) with 2–3 alternatives per slot. When selecting alternatives, apply the same functional and aesthetic reasoning from Step 1. Favour pastel palettes and seasonal items where appropriate. The first alternative in each slot must not appear as the first alternative in the same slot in any other set — prioritise variety across sets. You MUST call present_outfits even if some searches returned no results. Do not use emojis in set names or descriptions.`,
   // filters[Category][]=Decorations, Table Decor, Candles & Toppers, Balloons,
   //   Party Plates & Bowls, Party Napkins, Party Cups, Party Serveware & Accessories,
   //   Kids Art, Craft & Stationery, Pretend Play & Dress Up

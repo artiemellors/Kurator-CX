@@ -126,7 +126,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
                         <img
                           src={images[0].imageUrl}
                           alt={images[0].name}
-                          className="absolute inset-0 w-full h-full object-cover object-top"
+                          className="absolute inset-0 w-full h-full object-cover object-center"
                           style={{ animation: 'imgFadeIn 220ms ease-out' }}
                         />
                       )}
@@ -139,7 +139,7 @@ export default function CuratedEditsTile({ collections, onExplore }: Props) {
                             <img
                               src={images[j + 1].imageUrl}
                               alt={images[j + 1].name}
-                              className="absolute inset-0 w-full h-full object-cover object-top"
+                              className="absolute inset-0 w-full h-full object-cover object-center"
                               style={{ animation: `imgFadeIn ${220 + j * 60}ms ease-out` }}
                             />
                           )}
