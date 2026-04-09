@@ -149,10 +149,10 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                   )}
                 </div>
 
-                {/* Image strip — grows to fill remaining card height */}
+                {/* Image strip — 4:5 portrait on mobile, fills card height on desktop */}
                 <div className="grow min-h-0 flex gap-2 px-4 pb-14">
                   {images.map((p, j) => (
-                    <div key={j} className="relative flex-1 rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                    <div key={j} className="relative flex-1 aspect-[4/5] sm:aspect-auto rounded-[8px] overflow-hidden bg-[#F4F5F6]">
                       {p.imageUrl && (
                         <img src={p.imageUrl} alt={p.name}
                           className="absolute inset-0 w-full h-full object-cover object-center" />
@@ -257,18 +257,16 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
   )
 }
 
-// ── Proto C: Banner / hero with overlay ───────────────────────────────────────
-// Full-bleed card: first product as background, gradient overlay, text + thumbs on top.
-// Full-width — this pattern earns the full row.
+// ── Proto C: Hero tile ────────────────────────────────────────────────────────
+// Full-bleed image card: square on mobile, 16:7 on desktop.
+// No tint overlay — text overlaid at bottom with a soft gradient only beneath it.
 
 export function ProtoC({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div
-      className="col-span-2 sm:col-span-4 xl:col-span-5 rounded-[16px] overflow-hidden group"
-      style={{ background: '#F4F5F6', padding: '12px 0 12px 12px' }}
-    >
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group"
+         style={{ padding: '12px 0 12px 12px' }}>
       <div
         ref={trackRef}
         className="relative"
@@ -285,60 +283,33 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
           }}
         >
           {collections.map((col, i) => {
-            const images = col.products.filter(p => p.imageUrl)
-            const hero   = images[0]
-            const thumbs = images.slice(1, 5)
+            const hero = col.products.find(p => p.imageUrl)
             return (
               <div
                 key={i}
-                className="shrink-0 relative rounded-[12px] overflow-hidden"
-                style={{
-                  width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)`,
-                  minHeight: '180px',
-                  aspectRatio: '16 / 7',
-                }}
+                className="shrink-0 relative rounded-[12px] overflow-hidden aspect-square sm:aspect-[16/7]"
+                style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
                 {hero?.imageUrl && (
                   <img src={hero.imageUrl} alt={col.name}
                     className="absolute inset-0 w-full h-full object-cover object-center" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-transparent" />
+                {/* Soft bottom gradient — just enough for text legibility */}
+                <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
 
-                {/* Content overlay */}
-                <div className="absolute inset-0 p-5 flex flex-col justify-between">
-                  <div>
-                    <Badge label="C — Banner" />
-                    <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-white/60 mt-2 mb-1">
-                      Curated edit
-                    </p>
-                    <h3 className="font-bold text-[20px] sm:text-[24px] leading-[1.2] text-white tracking-[-0.2px]">
+                {/* Content */}
+                <div className="absolute inset-0 p-4 flex flex-col justify-between">
+                  <Badge label="C — Hero tile" />
+                  <div className="flex items-end justify-between gap-3">
+                    <h3 className="font-bold text-[18px] sm:text-[22px] leading-[1.2] text-white tracking-[-0.2px]">
                       {col.name}
                     </h3>
-                    {col.description && (
-                      <p className="text-[12px] text-white/65 leading-[1.45] mt-1.5 line-clamp-2 max-w-[220px]">
-                        {col.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-end justify-between gap-4">
-                    <div className="flex gap-1.5">
-                      {thumbs.map((p, j) => (
-                        <div key={j}
-                          className="w-10 h-10 sm:w-14 sm:h-14 rounded-[6px] overflow-hidden
-                                     border border-white/30 bg-white/15 shrink-0">
-                          {p.imageUrl && (
-                            <img src={p.imageUrl} alt={p.name}
-                              className="w-full h-full object-cover object-center" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
                     <button
                       onClick={() => onExplore(i)}
                       className="shrink-0 px-4 py-2 rounded-full bg-white text-[#1768b0]
                                  text-[12px] font-semibold hover:bg-[#1768b0] hover:text-white transition-all"
                     >
-                      Shop edit
+                      Shop
                     </button>
                   </div>
                 </div>
@@ -426,53 +397,6 @@ export function ProtoD({ collections, onExplore }: { collections: CollectionPrev
           })}
         </div>
         <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
-      </div>
-    </div>
-  )
-}
-
-// ── Proto E: Static grid (no swipe) ──────────────────────────────────────────
-// All collections visible at once — catalogue/browse feel, no carousel.
-// Full-width so all edits show side by side.
-
-export function ProtoE({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
-  return (
-    <div className="col-span-2 sm:col-span-4 xl:col-span-5">
-      <div className="mb-3">
-        <Badge label="E — Static grid" />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {collections.map((col, i) => {
-          const images = col.products.filter(p => p.imageUrl).slice(0, 4)
-          return (
-            <div
-              key={i}
-              className="bg-white rounded-[12px] border border-black/[0.08] p-4 flex flex-col gap-3
-                         hover:border-black/20 hover:shadow-sm transition-all cursor-pointer"
-              onClick={() => onExplore(i)}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-bold text-[14px] leading-[1.3] text-[#1a1a1a]">{col.name}</h3>
-                <i className="fa-solid fa-arrow-right text-[11px] text-[rgba(26,26,26,0.25)] mt-0.5 shrink-0" />
-              </div>
-              <div className="flex gap-1.5">
-                {images.map((p, j) => (
-                  <div key={j} className="relative flex-1 aspect-square rounded-[6px] overflow-hidden bg-[#F4F5F6]">
-                    {p.imageUrl && (
-                      <img src={p.imageUrl} alt={p.name}
-                        className="absolute inset-0 w-full h-full object-cover object-center" />
-                    )}
-                  </div>
-                ))}
-              </div>
-              {col.description && (
-                <p className="text-[11px] text-[rgba(26,26,26,0.45)] leading-[1.45] line-clamp-2">
-                  {col.description}
-                </p>
-              )}
-            </div>
-          )
-        })}
       </div>
     </div>
   )

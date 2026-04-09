@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import CuratedLooksTile from '../components/CuratedLooksTile'
 import CuratedEditsTile from '../components/CuratedEditsTile'
-import { ProtoA, ProtoB, ProtoC, ProtoD, ProtoE } from '../components/EditsTilePrototypes'
+import { ProtoA, ProtoB, ProtoC, ProtoD } from '../components/EditsTilePrototypes'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
 import { saveLookSession, loadLookSession, type CollectionPreview } from '@/lib/look-session'
@@ -430,7 +430,7 @@ function SearchResults() {
         {/* ── PROTOTYPE COMPARISON ── remove before shipping ───────────────── */}
         {collections.length > 0 && products !== null && products.length > 0 && (() => {
           // Cycle products to fill 22 slots so the grid feels populated regardless of result count
-          const pp = Array.from({ length: 22 }, (_, i) => products![i % products!.length])
+          const pp = Array.from({ length: 18 }, (_, i) => products![i % products!.length])
           const card = (p: CollectionProduct, idx: number) => (
             <KmartProductCard
               key={`ppp-${idx}`}
@@ -455,35 +455,29 @@ function SearchResults() {
                 Row 1: [P P P P]
                 Row 2: [P P  B  B]   — B at right
                 Row 3: [P P P P]
-                Row 4: [C  C  C  C]  — full-width
+                Row 4: [P P  C  C]   — C at right
                 Row 5: [P P  D  D]   — D at right
                 Row 6: [P P P P]
-                Row 7: [E  E  E  E]  — full-width
-                Row 8: [P P P P]
               */}
               <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6">
-                {/* 2 prods → A (cols 2–3 on 4-col desktop) */}
+                {/* 2 prods → A */}
                 {pp.slice(0, 2).map((p, i) => card(p, i))}
                 <ProtoA collections={collections} onExplore={handleExploreEdit} />
 
-                {/* 6 prods → B (2 fill right of row, 4 fill next row, B at cols 2–3) */}
+                {/* 6 prods → B */}
                 {pp.slice(2, 8).map((p, i) => card(p, i + 2))}
                 <ProtoB collections={collections} onExplore={handleExploreEdit} />
 
-                {/* 4 prods (fill row) → C (full-width) */}
+                {/* 4 prods → C */}
                 {pp.slice(8, 12).map((p, i) => card(p, i + 8))}
                 <ProtoC collections={collections} onExplore={handleExploreEdit} />
 
-                {/* 2 prods → D (cols 2–3) */}
+                {/* 2 prods → D */}
                 {pp.slice(12, 14).map((p, i) => card(p, i + 12))}
                 <ProtoD collections={collections} onExplore={handleExploreEdit} />
 
-                {/* 4 prods (fill row) → E (full-width) */}
-                {pp.slice(14, 18).map((p, i) => card(p, i + 14))}
-                <ProtoE collections={collections} onExplore={handleExploreEdit} />
-
                 {/* 4 trailing prods */}
-                {pp.slice(18, 22).map((p, i) => card(p, i + 18))}
+                {pp.slice(14, 18).map((p, i) => card(p, i + 14))}
               </div>
             </div>
           )
