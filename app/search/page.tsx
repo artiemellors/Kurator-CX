@@ -112,6 +112,9 @@ function SearchResults() {
   const noDirectResultsRef = useRef(false)
   // Accumulates SSE products across multiple search_kmart calls, deduped by name+colour.
   const sseProductsRef     = useRef<CollectionProduct[]>([])
+  // Latest collections from fetchCollectionPreviews — used by fetchBundle when it saves
+  // the session, since collections-preview typically finishes before the bundle search.
+  const latestCollectionsRef = useRef<CollectionPreview[]>([])
 
   useEffect(() => {
     if (!q) return
@@ -201,7 +204,9 @@ function SearchResults() {
       const { collections } = await res.json() as { collections: CollectionPreview[] }
       if (signal.aborted || !collections?.length) return
       setCollections(collections)
-      // Merge into session if outfits were already saved
+      latestCollectionsRef.current = collections
+      // Merge into session if the bundle has already saved it; otherwise
+      // latestCollectionsRef will be picked up when fetchBundle saves.
       const cached = loadLookSession(searchQ)
       if (cached) saveLookSession({ ...cached, collections })
     } catch (err) {
@@ -263,7 +268,7 @@ function SearchResults() {
             latestOutfits = event.result ?? []
             setOutfits(latestOutfits.length > 0 ? latestOutfits : null)
             if (latestOutfits.length > 0) {
-              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: [] })
+              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: latestCollectionsRef.current })
             }
             setBundleLoading(false)
             // If we still have no products (direct returned 0, SSE found nothing either),
@@ -276,7 +281,7 @@ function SearchResults() {
             latestRefinements = event.result
             setRefinements(latestRefinements)
             if (latestOutfits.length > 0) {
-              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: [] })
+              saveLookSession({ query: searchQ, outfits: latestOutfits, refinements: latestRefinements, collections: latestCollectionsRef.current })
             }
           } else if (event.type === 'error') {
             console.error('[Bundle] SSE error event:', event.message)
@@ -412,7 +417,7 @@ function SearchResults() {
             }
             if (item.type === 'edits-tile') {
               if (collections.length > 0) return <CuratedEditsTile key="edits-tile" collections={collections} onExplore={handleExploreEdit} />
-              if (bundleLoading) return <SkeletonEditsTile key="edits-tile" />
+              if (bundleLoading || collectionsLoading) return <SkeletonEditsTile key="edits-tile" />
               return null
             }
             return (
