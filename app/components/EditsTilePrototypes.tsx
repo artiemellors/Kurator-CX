@@ -212,7 +212,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
             return (
               <div
                 key={i}
-                className="shrink-0 relative rounded-[12px] overflow-hidden"
+                className="shrink-0 relative rounded-[12px] overflow-hidden border-[1.5px] border-black/[0.08]"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : '100%' }}
               >
                 {hero?.imageUrl && (
