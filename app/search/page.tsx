@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import CuratedLooksTile from '../components/CuratedLooksTile'
 import CuratedEditsTile from '../components/CuratedEditsTile'
+import { ProtoA, ProtoB, ProtoC, ProtoD, ProtoE } from '../components/EditsTilePrototypes'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
 import { saveLookSession, loadLookSession, type CollectionPreview } from '@/lib/look-session'
@@ -425,6 +426,63 @@ function SearchResults() {
             )
           })}
         </div>
+
+        {/* ── PROTOTYPE COMPARISON ── remove before shipping ───────────────── */}
+        {collections.length > 0 && (
+          <div className="mt-20 border-t-2 border-dashed border-amber-300 pt-10">
+            <p className="text-[11px] font-mono font-bold text-amber-500 uppercase tracking-widest mb-1">
+              Prototype comparison — collections tile variants
+            </p>
+            <p className="text-[12px] text-[rgba(26,26,26,0.35)] mb-12">
+              Live data. Remove this section before shipping.
+            </p>
+
+            <div className="flex flex-col gap-14">
+              <div>
+                <p className="text-[10px] font-mono text-[rgba(26,26,26,0.3)] uppercase tracking-wider mb-3">
+                  Current (reference)
+                </p>
+                <CuratedEditsTile collections={collections} onExplore={handleExploreEdit} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono text-[rgba(26,26,26,0.3)] uppercase tracking-wider mb-3">
+                  A — Editorial / text-forward
+                </p>
+                <ProtoA collections={collections} onExplore={handleExploreEdit} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono text-[rgba(26,26,26,0.3)] uppercase tracking-wider mb-3">
+                  B — Product shelf (equal thumbnails)
+                </p>
+                <ProtoB collections={collections} onExplore={handleExploreEdit} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono text-[rgba(26,26,26,0.3)] uppercase tracking-wider mb-3">
+                  C — Banner / hero with overlay
+                </p>
+                <ProtoC collections={collections} onExplore={handleExploreEdit} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono text-[rgba(26,26,26,0.3)] uppercase tracking-wider mb-3">
+                  D — Colour surface only (same layout)
+                </p>
+                <ProtoD collections={collections} onExplore={handleExploreEdit} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-mono text-[rgba(26,26,26,0.3)] uppercase tracking-wider mb-3">
+                  E — Static grid (no swipe, all visible)
+                </p>
+                <ProtoE collections={collections} onExplore={handleExploreEdit} />
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   )
