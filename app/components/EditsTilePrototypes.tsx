@@ -105,17 +105,18 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 bg-white rounded-[16px] border border-black/[0.08] overflow-hidden group">
+    // Grey outer container — swipe between white cards (same pattern as CuratedEditsTile)
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[280px] sm:min-h-0">
       <div
         ref={trackRef}
-        className="relative"
-        style={{ padding: '20px 0 20px 20px' }}
+        className="relative grow"
+        style={{ padding: '12px 0 12px 12px' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div
-          className="flex"
+          className="flex h-full"
           style={{
             gap: `${GAP_PX}px`,
             transform: `translateX(${offset}px)`,
@@ -127,15 +128,14 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
             return (
               <div
                 key={i}
-                className="shrink-0 flex flex-col gap-4"
+                className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
+                           shrink-0 flex flex-col relative"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
-                {/* Label badge */}
-                <Badge label="A — Text-forward" />
-
-                {/* Text leads */}
-                <div className="pr-4">
-                  <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[#1768b0]/80 mb-1.5">
+                {/* Text section — fixed height */}
+                <div className="px-4 pt-4 pb-3 shrink-0">
+                  <Badge label="A — Text-forward" />
+                  <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[#1768b0]/80 mt-3 mb-1.5">
                     Curated edit
                   </p>
                   <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a]
@@ -143,16 +143,16 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                     {col.name}
                   </h3>
                   {col.description && (
-                    <p className="text-[13px] text-[rgba(26,26,26,0.55)] leading-[1.55] line-clamp-2">
+                    <p className="text-[13px] text-[rgba(26,26,26,0.55)] leading-[1.55] line-clamp-1">
                       {col.description}
                     </p>
                   )}
                 </div>
 
-                {/* Equal-weight thumbnail strip */}
-                <div className="flex gap-2 pr-4">
+                {/* Image strip — grows to fill remaining card height */}
+                <div className="grow min-h-0 flex gap-2 px-4 pb-14">
                   {images.map((p, j) => (
-                    <div key={j} className="relative flex-1 aspect-square rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                    <div key={j} className="relative flex-1 rounded-[8px] overflow-hidden bg-[#F4F5F6]">
                       {p.imageUrl && (
                         <img src={p.imageUrl} alt={p.name}
                           className="absolute inset-0 w-full h-full object-cover object-center" />
@@ -161,10 +161,10 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                   ))}
                 </div>
 
-                {/* Arrow text CTA */}
+                {/* CTA — absolute so it overlaps the image strip bottom */}
                 <button
                   onClick={() => onExplore(i)}
-                  className="self-start flex items-center gap-1.5 text-[13px] font-semibold
+                  className="absolute bottom-4 left-4 flex items-center gap-1.5 text-[13px] font-semibold
                              text-[#1768b0] hover:underline underline-offset-2 transition-all"
                 >
                   Shop the edit
@@ -188,7 +188,7 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 bg-[#F4F5F6] rounded-[16px] overflow-hidden group">
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group min-h-[220px] sm:min-h-0">
       <div
         ref={trackRef}
         className="relative"
@@ -206,7 +206,7 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
           }}
         >
           {collections.map((col, i) => {
-            const images = col.products.filter(p => p.imageUrl).slice(0, 6)
+            const images = col.products.filter(p => p.imageUrl).slice(0, 4)
             return (
               <div
                 key={i}
@@ -235,11 +235,11 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                   </button>
                 </div>
 
-                {/* Flat equal-size shelf */}
+                {/* Flat portrait shelf — 4 items, taller than square */}
                 <div className="flex gap-2">
                   {images.map((p, j) => (
                     <div key={j}
-                      className="relative shrink-0 flex-1 aspect-square rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                      className="relative shrink-0 flex-1 aspect-[4/5] rounded-[8px] overflow-hidden bg-[#F4F5F6]">
                       {p.imageUrl && (
                         <img src={p.imageUrl} alt={p.name}
                           className="absolute inset-0 w-full h-full object-cover object-center" />
