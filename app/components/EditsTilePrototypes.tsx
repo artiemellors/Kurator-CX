@@ -217,7 +217,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
               >
                 {hero?.imageUrl && (
                   <img src={hero.imageUrl} alt={col.name}
-                    className="absolute inset-0 w-full h-full object-cover object-center" />
+                    className="absolute inset-0 w-full h-full object-cover object-top" />
                 )}
                 <ProtoLabel letter="C" />
                 <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
