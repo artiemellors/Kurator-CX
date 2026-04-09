@@ -88,15 +88,24 @@ function NavArrows({ activeIdx, total, goTo }: { activeIdx: number; total: numbe
   )
 }
 
+function Badge({ label }: { label: string }) {
+  return (
+    <span className="inline-block text-[9px] font-mono font-bold text-amber-500 uppercase
+                     tracking-widest bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
+      {label}
+    </span>
+  )
+}
+
 // ── Proto A: Editorial / text-forward ─────────────────────────────────────────
-// Text leads: big collection name + description, then a thumbnail strip.
-// Products support the idea rather than composing it visually.
+// Big name + description first — text anchors meaning before images.
+// Equal-weight thumbnail strip below: "browse these", not "compose this outfit".
 
 export function ProtoA({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="bg-white rounded-[16px] border border-black/[0.08] overflow-hidden group">
+    <div className="col-span-2 bg-white rounded-[16px] border border-black/[0.08] overflow-hidden group">
       <div
         ref={trackRef}
         className="relative"
@@ -121,12 +130,16 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                 className="shrink-0 flex flex-col gap-4"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
-                {/* Text leads — anchors meaning before images */}
+                {/* Label badge */}
+                <Badge label="A — Text-forward" />
+
+                {/* Text leads */}
                 <div className="pr-4">
                   <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[#1768b0]/80 mb-1.5">
                     Curated edit
                   </p>
-                  <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a] tracking-[-0.3px] mb-2">
+                  <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a]
+                                 tracking-[-0.3px] mb-2">
                     {col.name}
                   </h3>
                   {col.description && (
@@ -135,7 +148,8 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                     </p>
                   )}
                 </div>
-                {/* Equal-weight thumbnail strip — shelf, not composition */}
+
+                {/* Equal-weight thumbnail strip */}
                 <div className="flex gap-2 pr-4">
                   {images.map((p, j) => (
                     <div key={j} className="relative flex-1 aspect-square rounded-[8px] overflow-hidden bg-[#F4F5F6]">
@@ -146,7 +160,8 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                     </div>
                   ))}
                 </div>
-                {/* Text CTA — understated arrow link */}
+
+                {/* Arrow text CTA */}
                 <button
                   onClick={() => onExplore(i)}
                   className="self-start flex items-center gap-1.5 text-[13px] font-semibold
@@ -166,14 +181,14 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
 }
 
 // ── Proto B: Product shelf ────────────────────────────────────────────────────
-// Equal-size square thumbnails in a horizontal row.
-// No composition hierarchy — "browse these" not "wear these together".
+// Equal-size square thumbnails in a flat row — no compositional hierarchy.
+// Name + pill CTA in a header row above the shelf.
 
 export function ProtoB({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="bg-[#F4F5F6] rounded-[16px] overflow-hidden group">
+    <div className="col-span-2 bg-[#F4F5F6] rounded-[16px] overflow-hidden group">
       <div
         ref={trackRef}
         className="relative"
@@ -199,7 +214,10 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                            shrink-0 flex flex-col gap-3 p-4"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
-                {/* Header: name + pill CTA side by side */}
+                {/* Badge */}
+                <Badge label="B — Shelf" />
+
+                {/* Header: name + pill CTA */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)] mb-0.5">
@@ -216,6 +234,7 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                     See all
                   </button>
                 </div>
+
                 {/* Flat equal-size shelf */}
                 <div className="flex gap-2">
                   {images.map((p, j) => (
@@ -239,15 +258,15 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
 }
 
 // ── Proto C: Banner / hero with overlay ───────────────────────────────────────
-// Full-bleed card: hero product image behind gradient, name + description over it,
-// small thumbnail row + CTA pinned to bottom. Magazine spread feel.
+// Full-bleed card: first product as background, gradient overlay, text + thumbs on top.
+// Full-width — this pattern earns the full row.
 
 export function ProtoC({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
     <div
-      className="rounded-[16px] overflow-hidden group"
+      className="col-span-2 sm:col-span-4 xl:col-span-5 rounded-[16px] overflow-hidden group"
       style={{ background: '#F4F5F6', padding: '12px 0 12px 12px' }}
     >
       <div
@@ -266,32 +285,30 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
           }}
         >
           {collections.map((col, i) => {
-            const images  = col.products.filter(p => p.imageUrl)
-            const hero    = images[0]
-            const thumbs  = images.slice(1, 5)
+            const images = col.products.filter(p => p.imageUrl)
+            const hero   = images[0]
+            const thumbs = images.slice(1, 5)
             return (
               <div
                 key={i}
                 className="shrink-0 relative rounded-[12px] overflow-hidden"
                 style={{
                   width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)`,
-                  aspectRatio: '16 / 7',
                   minHeight: '180px',
+                  aspectRatio: '16 / 7',
                 }}
               >
-                {/* Hero background image */}
                 {hero?.imageUrl && (
                   <img src={hero.imageUrl} alt={col.name}
                     className="absolute inset-0 w-full h-full object-cover object-center" />
                 )}
-                {/* Gradient overlay — left-heavy so text is legible */}
                 <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-transparent" />
 
-                {/* Content layer */}
+                {/* Content overlay */}
                 <div className="absolute inset-0 p-5 flex flex-col justify-between">
-                  {/* Top: label + name + description */}
                   <div>
-                    <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-white/60 mb-1">
+                    <Badge label="C — Banner" />
+                    <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-white/60 mt-2 mb-1">
                       Curated edit
                     </p>
                     <h3 className="font-bold text-[20px] sm:text-[24px] leading-[1.2] text-white tracking-[-0.2px]">
@@ -303,7 +320,6 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
                       </p>
                     )}
                   </div>
-                  {/* Bottom: thumbnail row + CTA */}
                   <div className="flex items-end justify-between gap-4">
                     <div className="flex gap-1.5">
                       {thumbs.map((p, j) => (
@@ -319,9 +335,8 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
                     </div>
                     <button
                       onClick={() => onExplore(i)}
-                      className="shrink-0 px-4 py-2 rounded-full bg-white
-                                 text-[#1768b0] text-[12px] font-semibold
-                                 hover:bg-[#1768b0] hover:text-white transition-all"
+                      className="shrink-0 px-4 py-2 rounded-full bg-white text-[#1768b0]
+                                 text-[12px] font-semibold hover:bg-[#1768b0] hover:text-white transition-all"
                     >
                       Shop edit
                     </button>
@@ -338,15 +353,15 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
 }
 
 // ── Proto D: Colour surface only ──────────────────────────────────────────────
-// Identical layout to the current CuratedEditsTile but with a subtle brand-tinted
-// background instead of neutral grey. Minimum-change surface differentiation.
+// Identical layout to the current tile. Only the background hue changes.
+// Tests whether surface colour alone is enough to differentiate.
 
 export function ProtoD({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
     <div
-      className="rounded-[16px] overflow-hidden group min-h-[260px] sm:min-h-0"
+      className="col-span-2 flex flex-col rounded-[16px] overflow-hidden group min-h-[260px] sm:min-h-0"
       style={{ background: 'rgba(23,104,176,0.08)', padding: '12px 0 12px 12px' }}
     >
       <div
@@ -373,7 +388,11 @@ export function ProtoD({ collections, onExplore }: { collections: CollectionPrev
                            relative flex flex-col shrink-0"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
-                <div className="px-4 pt-4 pb-14 grow overflow-hidden rounded-[12px]">
+                {/* Badge inside card */}
+                <div className="px-4 pt-4">
+                  <Badge label="D — Tinted" />
+                </div>
+                <div className="px-4 pt-2 pb-14 grow overflow-hidden">
                   <div className="flex gap-2 h-full">
                     <div className="relative flex-[3] rounded-[10px] overflow-hidden bg-[#F4F5F6]">
                       {images[0]?.imageUrl && (
@@ -397,7 +416,7 @@ export function ProtoD({ collections, onExplore }: { collections: CollectionPrev
                   onClick={() => onExplore(i)}
                   className="absolute bottom-4 left-4 px-4 py-2 rounded-full bg-white
                              border border-[#1768b0] text-[#1768b0] text-[12px] font-semibold
-                             shadow-sm transition-all duration-200 z-10 whitespace-nowrap
+                             shadow-sm transition-all z-10 whitespace-nowrap
                              hover:bg-[#1768b0] hover:text-white"
                 >
                   Shop {col.name}
@@ -412,16 +431,16 @@ export function ProtoD({ collections, onExplore }: { collections: CollectionPrev
   )
 }
 
-// ── Proto E: Static 2-col grid (no swipe) ────────────────────────────────────
-// All collections visible at once, no carousel. Catalogue/browse feel.
-// Clicking anywhere on the card navigates through.
+// ── Proto E: Static grid (no swipe) ──────────────────────────────────────────
+// All collections visible at once — catalogue/browse feel, no carousel.
+// Full-width so all edits show side by side.
 
 export function ProtoE({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   return (
-    <div>
-      <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[rgba(26,26,26,0.35)] mb-3">
-        Shop the edits
-      </p>
+    <div className="col-span-2 sm:col-span-4 xl:col-span-5">
+      <div className="mb-3">
+        <Badge label="E — Static grid" />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {collections.map((col, i) => {
           const images = col.products.filter(p => p.imageUrl).slice(0, 4)
@@ -436,7 +455,6 @@ export function ProtoE({ collections, onExplore }: { collections: CollectionPrev
                 <h3 className="font-bold text-[14px] leading-[1.3] text-[#1a1a1a]">{col.name}</h3>
                 <i className="fa-solid fa-arrow-right text-[11px] text-[rgba(26,26,26,0.25)] mt-0.5 shrink-0" />
               </div>
-              {/* Equal thumbnails: 4 in a row */}
               <div className="flex gap-1.5">
                 {images.map((p, j) => (
                   <div key={j} className="relative flex-1 aspect-square rounded-[6px] overflow-hidden bg-[#F4F5F6]">
