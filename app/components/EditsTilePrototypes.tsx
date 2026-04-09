@@ -188,15 +188,18 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group min-h-[220px] sm:min-h-0">
-      <div
-        ref={trackRef}
-        className="relative"
-        style={{ padding: '12px 0 12px 12px' }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
+    // trackRef IS the grid item — no outer wrapper, so no wrapper/card height mismatch.
+    // self-start prevents the grid from stretching it to match adjacent product card height.
+    <div
+      ref={trackRef}
+      className="col-span-2 self-start -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group"
+      style={{ padding: '12px 0 12px 12px' }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {/* relative wrapper for NavArrows absolute positioning */}
+      <div className="relative">
         <div
           className="flex"
           style={{
@@ -265,15 +268,16 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group self-start"
-         style={{ padding: '12px 0 12px 12px' }}>
-      <div
-        ref={trackRef}
-        className="relative"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
+    // trackRef IS the grid item — self-start prevents grid row stretching.
+    <div
+      ref={trackRef}
+      className="col-span-2 self-start -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group"
+      style={{ padding: '12px 0 12px 12px' }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      <div className="relative">
         <div
           className="flex"
           style={{
