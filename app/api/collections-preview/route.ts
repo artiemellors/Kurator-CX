@@ -3,30 +3,27 @@ import { searchKmart, Product } from '@/lib/kmart-scraper'
 import { runAgentLoop } from '@/lib/llm-agent'
 import { getCategoryConfig } from '@/lib/category-config'
 
-const SYSTEM_PROMPT = `You are a Kmart style editor creating themed editorial collections — curated ranges for discovery and browsing, NOT outfit bundles.
-
-Each collection is a mood or lifestyle theme, not a "wear these together" suggestion. Think in terms of colour stories, occasions, and aesthetics — not what goes on a person's body at once.
-
-Search strategy:
-- Make 3–5 targeted searches to explore the theme space
-- Look for products across different types (don't just search clothing)
-- Prioritise products with strong, distinct colours
-
-For each collection's preview images (product_ids):
-- Pick exactly 3 products with visually distinct, complementary colours
-- Together they should read as a colour palette / mood board
-- Avoid 3 clothing items on models — that looks like an outfit suggestion
-
-Call present_collections once you've found enough variety.`
-
 export async function POST(req: NextRequest) {
   const { query, category } = await req.json() as { query: string; category?: string }
   if (!query?.trim()) return Response.json({ collections: [] })
 
   const config = getCategoryConfig(category ?? 'outfits')
 
-  console.log(`[CollectionsPreview] Building previews for "${query}"`)
+  const SYSTEM_PROMPT = `You are a Kmart style editor creating themed editorial collections for the ${config.label} category — curated ranges for discovery and browsing, NOT outfit bundles.
 
+Each collection is a mood or lifestyle theme. Think in terms of colour stories, occasions, and aesthetics.
+
+Search strategy:
+- Use short, specific product-type queries — one product type per call (e.g. "cushion cover", "floor lamp", "ceramic vase"). Do NOT use long descriptive phrases.
+- If a search returns 0 results, move on immediately — do not retry similar terms.
+- Make 3–5 searches across different product types relevant to the ${config.label} category.
+- Call present_collections as soon as you have 6+ products across your searches.
+
+For each collection's preview images (product_ids):
+- Pick exactly 3 products with visually distinct, complementary colours
+- Together they should read as a colour palette / mood board`
+
+  console.log(`[CollectionsPreview] Building previews for "${query}"`)
   try {
     const productMap = new Map<string, Product>()
     let searchIndex = 0
@@ -35,7 +32,7 @@ export async function POST(req: NextRequest) {
       system: SYSTEM_PROMPT,
       userMessage: `Create 2–3 themed editorial collections for: "${query}"`,
       maxTokens: 2048,
-      maxTurns: 8,
+      maxTurns: 10,
       tools: [
         {
           name: 'search_kmart',
@@ -48,7 +45,7 @@ export async function POST(req: NextRequest) {
         },
         {
           name: 'present_collections',
-          description: 'Present the final themed collections. Call after at least 3 searches.',
+          description: 'Present the final themed collections. Call as soon as you have 6+ products — do not keep searching if you already have enough variety.',
           parameters: {
             type: 'object',
             properties: {
