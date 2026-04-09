@@ -1,67 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
 import type { CollectionPreview } from '@/lib/look-session'
-
-// ── Shared swipe logic ────────────────────────────────────────────────────────
-
-const PEEK_PX = 20
-const GAP_PX  = 8
-
-function useSwipe(count: number, peekPx = PEEK_PX, gapPx = GAP_PX) {
-  const [activeIdx, setActiveIdx] = useState(0)
-  const [dragging, setDragging]   = useState(false)
-  const [dragDelta, setDragDelta] = useState(0)
-  const [cardWidth, setCardWidth] = useState(0)
-  const trackRef   = useRef<HTMLDivElement>(null)
-  const touchStart = useRef<{ x: number; y: number } | null>(null)
-  const dirLocked  = useRef<'h' | 'v' | null>(null)
-
-  useEffect(() => {
-    const el = trackRef.current
-    if (!el) return
-    const ro = new ResizeObserver(entries => {
-      setCardWidth(entries[0].contentRect.width - gapPx - peekPx)
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [gapPx, peekPx])
-
-  function goTo(i: number) { setActiveIdx(Math.max(0, Math.min(count - 1, i))) }
-
-  function onTouchStart(e: React.TouchEvent) {
-    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    dirLocked.current = null
-    setDragging(false); setDragDelta(0)
-  }
-
-  function onTouchMove(e: React.TouchEvent) {
-    if (!touchStart.current) return
-    const dx = e.touches[0].clientX - touchStart.current.x
-    const dy = e.touches[0].clientY - touchStart.current.y
-    if (!dirLocked.current) {
-      if (Math.abs(dx) > Math.abs(dy) + 4) dirLocked.current = 'h'
-      else if (Math.abs(dy) > Math.abs(dx) + 4) dirLocked.current = 'v'
-      else return
-    }
-    if (dirLocked.current === 'v') return
-    e.preventDefault(); setDragging(true); setDragDelta(dx)
-  }
-
-  function onTouchEnd() {
-    if (dragging) {
-      if (dragDelta < -48) goTo(activeIdx + 1)
-      else if (dragDelta > 48) goTo(activeIdx - 1)
-    }
-    setDragging(false); setDragDelta(0)
-    touchStart.current = null; dirLocked.current = null
-  }
-
-  const step   = cardWidth + gapPx
-  const offset = cardWidth > 0 ? -activeIdx * step + (dragging ? dragDelta : 0) : 0
-
-  return { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging }
-}
+import { useSwipe, GAP_PX, PEEK_PX } from '@/hooks/useSwipe'
 
 function NavArrows({ activeIdx, total, goTo }: { activeIdx: number; total: number; goTo: (i: number) => void }) {
   return (
@@ -88,7 +28,6 @@ function NavArrows({ activeIdx, total, goTo }: { activeIdx: number; total: numbe
   )
 }
 
-// Small floating prototype label — sits on the top-left of the first image
 function ProtoLabel({ letter }: { letter: string }) {
   return (
     <span className="absolute top-2 left-2 z-10 text-[9px] font-mono font-bold text-amber-600
@@ -130,7 +69,6 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                            shrink-0 flex flex-col"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
-                {/* Text section: label + CTA on same row, name + description below */}
                 <div className="px-4 pt-4 pb-3 shrink-0">
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[#1768b0]/80">
@@ -156,7 +94,6 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                   )}
                 </div>
 
-                {/* Two images — 4:5 on mobile, fill card height on desktop */}
                 <div className="grow min-h-0 flex gap-2 px-4 pb-4">
                   {images.map((p, j) => (
                     <div key={j} className="relative flex-1 aspect-[4/5] sm:aspect-auto rounded-[8px] overflow-hidden bg-[#F4F5F6]">
@@ -210,7 +147,6 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                            shrink-0 flex flex-col p-4 gap-3"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >
-                {/* Header: name + pill CTA */}
                 <div className="flex items-start justify-between gap-3 shrink-0">
                   <div>
                     <p className="text-[10px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)] mb-0.5">
@@ -228,7 +164,6 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
                   </button>
                 </div>
 
-                {/* Two images — fill remaining card height */}
                 <div className="grow min-h-0 flex gap-2">
                   {images.map((p, j) => (
                     <div key={j} className="relative flex-1 aspect-[4/5] sm:aspect-auto rounded-[8px] overflow-hidden bg-[#F4F5F6]">
@@ -253,13 +188,10 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
 // ── Proto C: Hero tile ────────────────────────────────────────────────────────
 
 export function ProtoC({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
-  // peekPx=0, gapPx=0 — card fills full width, no next-card hint
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length, 0, 0)
 
   return (
-    // Desktop: transparent bg + no padding so the card sits directly in the grid slot.
-    // Mobile: grey container with min-h for self-contained row height.
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent overflow-hidden sm:overflow-visible flex flex-col group min-h-[240px] sm:min-h-0">
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent flex flex-col group min-h-[240px] sm:min-h-0">
       <div
         ref={trackRef}
         className="relative grow pt-3 pb-3 pl-3 sm:p-0 overflow-hidden sm:rounded-[12px]"
@@ -287,9 +219,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
                     className="absolute inset-0 w-full h-full object-cover object-center" />
                 )}
                 <ProtoLabel letter="C" />
-                {/* Soft bottom gradient */}
                 <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
-                {/* Content */}
                 <div className="absolute inset-0 p-4 flex flex-col justify-end">
                   <div className="flex items-end justify-between gap-3">
                     <h3 className="font-bold text-[18px] sm:text-[22px] leading-[1.2] text-white tracking-[-0.2px]">
