@@ -262,7 +262,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
     <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent overflow-hidden sm:overflow-visible flex flex-col group min-h-[240px] sm:min-h-0">
       <div
         ref={trackRef}
-        className="relative grow pt-3 pb-3 pl-3 sm:p-0"
+        className="relative grow pt-3 pb-3 pl-3 sm:p-0 overflow-hidden sm:rounded-[12px]"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
