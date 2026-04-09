@@ -180,22 +180,22 @@ function SearchResults() {
         setCollectionsLoading(false)
       } else {
         // Session predates collection split — fetch previews now without re-running outfit search
-        fetchCollectionPreviews(searchQ, controller.signal)
+        fetchCollectionPreviews(searchQ, gridCategory, controller.signal)
       }
       setBundleLoading(false)
     } else {
       fetchBundle(searchQ, controller.signal)
-      fetchCollectionPreviews(searchQ, controller.signal)
+      fetchCollectionPreviews(searchQ, gridCategory, controller.signal)
     }
   }
 
-  async function fetchCollectionPreviews(searchQ: string, signal: AbortSignal) {
+  async function fetchCollectionPreviews(searchQ: string, category: string, signal: AbortSignal) {
     setCollectionsLoading(true)
     try {
       const res = await fetch('/api/collections-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchQ, category: classifiedCategoryRef.current }),
+        body: JSON.stringify({ query: searchQ, category }),
         signal,
       })
       const { collections } = await res.json() as { collections: CollectionPreview[] }
