@@ -98,230 +98,234 @@ function Badge({ label }: { label: string }) {
 }
 
 // ── Proto A: Editorial / text-forward ─────────────────────────────────────────
-// Big name + description first — text anchors meaning before images.
-// Equal-weight thumbnail strip below: "browse these", not "compose this outfit".
 
 export function ProtoA({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    // Grey outer container — swipe between white cards (same pattern as CuratedEditsTile)
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[280px] sm:min-h-0">
-      <div
-        ref={trackRef}
-        className="relative grow"
-        style={{ padding: '12px 0 12px 12px' }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
+    // Outer col-span wrapper: badge in white space above, grey tile below
+    <div className="col-span-2 flex flex-col">
+      <div className="mb-1.5 px-1 sm:px-0">
+        <Badge label="A — Text-forward" />
+      </div>
+      <div className="-mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group grow min-h-[280px] sm:min-h-0">
         <div
-          className="flex h-full"
-          style={{
-            gap: `${GAP_PX}px`,
-            transform: `translateX(${offset}px)`,
-            transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
-          }}
+          ref={trackRef}
+          className="relative grow"
+          style={{ padding: '12px 0 12px 12px' }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
-          {collections.map((col, i) => {
-            const images = col.products.filter(p => p.imageUrl).slice(0, 5)
-            return (
-              <div
-                key={i}
-                className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
-                           shrink-0 flex flex-col relative"
-                style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
-              >
-                {/* Text section — fixed height */}
-                <div className="px-4 pt-4 pb-3 shrink-0">
-                  <Badge label="A — Text-forward" />
-                  <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[#1768b0]/80 mt-3 mb-1.5">
-                    Curated edit
-                  </p>
-                  <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a]
-                                 tracking-[-0.3px] mb-2">
-                    {col.name}
-                  </h3>
-                  {col.description && (
-                    <p className="text-[13px] text-[rgba(26,26,26,0.55)] leading-[1.55] line-clamp-1">
-                      {col.description?.split(/[.!?]/)[0]}
-                    </p>
-                  )}
-                </div>
-
-                {/* Image strip — 4:5 portrait on mobile, fills card height on desktop */}
-                <div className="grow min-h-0 flex gap-2 px-4 pb-14">
-                  {images.map((p, j) => (
-                    <div key={j} className="relative flex-1 aspect-[4/5] sm:aspect-auto rounded-[8px] overflow-hidden bg-[#F4F5F6]">
-                      {p.imageUrl && (
-                        <img src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full object-cover object-center" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA — absolute so it overlaps the image strip bottom */}
-                <button
-                  onClick={() => onExplore(i)}
-                  className="absolute bottom-4 left-4 flex items-center gap-1.5 text-[13px] font-semibold
-                             text-[#1768b0] hover:underline underline-offset-2 transition-all"
+          <div
+            className="flex h-full"
+            style={{
+              gap: `${GAP_PX}px`,
+              transform: `translateX(${offset}px)`,
+              transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
+            }}
+          >
+            {collections.map((col, i) => {
+              const images = col.products.filter(p => p.imageUrl).slice(0, 5)
+              return (
+                <div
+                  key={i}
+                  className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
+                             shrink-0 flex flex-col"
+                  style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
                 >
-                  Shop the edit
-                  <i className="fa-solid fa-arrow-right text-[10px]" />
-                </button>
-              </div>
-            )
-          })}
+                  {/* Text section: label + CTA on same row, name + description below */}
+                  <div className="px-4 pt-4 pb-3 shrink-0">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[#1768b0]/80">
+                        Curated edit
+                      </p>
+                      <button
+                        onClick={() => onExplore(i)}
+                        className="shrink-0 flex items-center gap-1 text-[12px] font-semibold
+                                   text-[#1768b0] hover:underline underline-offset-2 transition-all"
+                      >
+                        Shop the edit
+                        <i className="fa-solid fa-arrow-right text-[9px]" />
+                      </button>
+                    </div>
+                    <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a]
+                                   tracking-[-0.3px] mb-1.5">
+                      {col.name}
+                    </h3>
+                    {col.description && (
+                      <p className="text-[13px] text-[rgba(26,26,26,0.55)] leading-[1.55] line-clamp-1">
+                        {col.description.split(/[.!?]/)[0]}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Image strip — 4:5 portrait on mobile, fills card height on desktop */}
+                  <div className="grow min-h-0 flex gap-2 px-4 pb-4">
+                    {images.map((p, j) => (
+                      <div key={j} className="relative flex-1 aspect-[4/5] sm:aspect-auto rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                        {p.imageUrl && (
+                          <img src={p.imageUrl} alt={p.name}
+                            className="absolute inset-0 w-full h-full object-cover object-center" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
         </div>
-        <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
       </div>
     </div>
   )
 }
 
 // ── Proto B: Product shelf ────────────────────────────────────────────────────
-// Equal-size square thumbnails in a flat row — no compositional hierarchy.
-// Name + pill CTA in a header row above the shelf.
 
 export function ProtoB({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    // trackRef IS the grid item — no outer wrapper, so no wrapper/card height mismatch.
-    // self-start prevents the grid from stretching it to match adjacent product card height.
-    <div
-      ref={trackRef}
-      className="col-span-2 self-start -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group"
-      style={{ padding: '12px 0 12px 12px' }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-    >
-      {/* relative wrapper for NavArrows absolute positioning */}
-      <div className="relative">
+    // Outer col-span wrapper stretches to row height; grey tile fills it via grow.
+    <div className="col-span-2 flex flex-col">
+      <div className="mb-1.5 px-1 sm:px-0">
+        <Badge label="B — Shelf" />
+      </div>
+      {/* Grey tile fills remaining height after badge */}
+      <div className="-mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden grow flex flex-col group">
         <div
-          className="flex"
-          style={{
-            gap: `${GAP_PX}px`,
-            transform: `translateX(${offset}px)`,
-            transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
-          }}
+          ref={trackRef}
+          className="relative grow"
+          style={{ padding: '12px 0 12px 12px' }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
-          {collections.map((col, i) => {
-            const images = col.products.filter(p => p.imageUrl).slice(0, 4)
-            return (
-              <div
-                key={i}
-                className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
-                           shrink-0 flex flex-col gap-3 p-4"
-                style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
-              >
-                {/* Badge */}
-                <Badge label="B — Shelf" />
-
-                {/* Header: name + pill CTA */}
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)] mb-0.5">
-                      Shop the edit
-                    </p>
-                    <h3 className="font-bold text-[15px] leading-[1.25] text-[#1a1a1a]">{col.name}</h3>
-                  </div>
-                  <button
-                    onClick={() => onExplore(i)}
-                    className="shrink-0 text-[11px] font-semibold text-[#1768b0]
-                               border border-[#1768b0] rounded-full px-3 py-1.5 whitespace-nowrap
-                               hover:bg-[#1768b0] hover:text-white transition-all"
-                  >
-                    See all
-                  </button>
-                </div>
-
-                {/* Flat portrait shelf — 4 items, taller than square */}
-                <div className="flex gap-2">
-                  {images.map((p, j) => (
-                    <div key={j}
-                      className="relative shrink-0 flex-1 aspect-[4/5] rounded-[8px] overflow-hidden bg-[#F4F5F6]">
-                      {p.imageUrl && (
-                        <img src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full object-cover object-center" />
-                      )}
+          <div
+            className="flex h-full"
+            style={{
+              gap: `${GAP_PX}px`,
+              transform: `translateX(${offset}px)`,
+              transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
+            }}
+          >
+            {collections.map((col, i) => {
+              const images = col.products.filter(p => p.imageUrl).slice(0, 4)
+              return (
+                <div
+                  key={i}
+                  className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
+                             shrink-0 flex flex-col p-4 gap-3"
+                  style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
+                >
+                  {/* Header: name + pill CTA */}
+                  <div className="flex items-start justify-between gap-3 shrink-0">
+                    <div>
+                      <p className="text-[10px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)] mb-0.5">
+                        Shop the edit
+                      </p>
+                      <h3 className="font-bold text-[15px] leading-[1.25] text-[#1a1a1a]">{col.name}</h3>
                     </div>
-                  ))}
+                    <button
+                      onClick={() => onExplore(i)}
+                      className="shrink-0 text-[11px] font-semibold text-[#1768b0]
+                                 border border-[#1768b0] rounded-full px-3 py-1.5 whitespace-nowrap
+                                 hover:bg-[#1768b0] hover:text-white transition-all"
+                    >
+                      See all
+                    </button>
+                  </div>
+
+                  {/* Image shelf — fills remaining card height, no fixed aspect ratio */}
+                  <div className="grow min-h-0 flex gap-2">
+                    {images.map((p, j) => (
+                      <div key={j}
+                        className="relative flex-1 rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                        {p.imageUrl && (
+                          <img src={p.imageUrl} alt={p.name}
+                            className="absolute inset-0 w-full h-full object-cover object-center" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
+          <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
         </div>
-        <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
       </div>
     </div>
   )
 }
 
 // ── Proto C: Hero tile ────────────────────────────────────────────────────────
-// Full-bleed image card: square on mobile, 16:7 on desktop.
-// No tint overlay — text overlaid at bottom with a soft gradient only beneath it.
 
 export function ProtoC({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    // trackRef IS the grid item — self-start prevents grid row stretching.
-    <div
-      ref={trackRef}
-      className="col-span-2 self-start -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden group"
-      style={{ padding: '12px 0 12px 12px' }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-    >
-      <div className="relative">
+    // Outer col-span wrapper stretches to row height; grey tile fills it via grow.
+    <div className="col-span-2 flex flex-col">
+      <div className="mb-1.5 px-1 sm:px-0">
+        <Badge label="C — Hero tile" />
+      </div>
+      {/* Grey tile fills remaining height after badge */}
+      <div className="-mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden grow flex flex-col group">
         <div
-          className="flex"
-          style={{
-            gap: `${GAP_PX}px`,
-            transform: `translateX(${offset}px)`,
-            transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
-          }}
+          ref={trackRef}
+          className="relative grow"
+          style={{ padding: '12px 0 12px 12px' }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
-          {collections.map((col, i) => {
-            const hero = col.products.find(p => p.imageUrl)
-            return (
-              <div
-                key={i}
-                className="shrink-0 relative rounded-[12px] overflow-hidden aspect-square sm:aspect-[16/7]"
-                style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
-              >
-                {hero?.imageUrl && (
-                  <img src={hero.imageUrl} alt={col.name}
-                    className="absolute inset-0 w-full h-full object-cover object-center" />
-                )}
-                {/* Soft bottom gradient — just enough for text legibility */}
-                <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
-
-                {/* Content */}
-                <div className="absolute inset-0 p-4 flex flex-col justify-between">
-                  <Badge label="C — Hero tile" />
-                  <div className="flex items-end justify-between gap-3">
-                    <h3 className="font-bold text-[18px] sm:text-[22px] leading-[1.2] text-white tracking-[-0.2px]">
-                      {col.name} Edit
-                    </h3>
-                    <button
-                      onClick={() => onExplore(i)}
-                      className="shrink-0 px-4 py-2 rounded-full bg-white text-[#1768b0]
-                                 text-[12px] font-semibold hover:bg-[#1768b0] hover:text-white transition-all"
-                    >
-                      Shop
-                    </button>
+          <div
+            className="flex h-full"
+            style={{
+              gap: `${GAP_PX}px`,
+              transform: `translateX(${offset}px)`,
+              transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
+            }}
+          >
+            {collections.map((col, i) => {
+              const hero = col.products.find(p => p.imageUrl)
+              return (
+                // No aspect-ratio — card stretches to fill the track height (= row height - badge - padding)
+                <div
+                  key={i}
+                  className="shrink-0 relative rounded-[12px] overflow-hidden"
+                  style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
+                >
+                  {hero?.imageUrl && (
+                    <img src={hero.imageUrl} alt={col.name}
+                      className="absolute inset-0 w-full h-full object-cover object-center" />
+                  )}
+                  {/* Soft bottom gradient */}
+                  <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
+                  {/* Content */}
+                  <div className="absolute inset-0 p-4 flex flex-col justify-end">
+                    <div className="flex items-end justify-between gap-3">
+                      <h3 className="font-bold text-[18px] sm:text-[22px] leading-[1.2] text-white tracking-[-0.2px]">
+                        {col.name} Edit
+                      </h3>
+                      <button
+                        onClick={() => onExplore(i)}
+                        className="shrink-0 px-4 py-2 rounded-full bg-white text-[#1768b0]
+                                   text-[12px] font-semibold hover:bg-[#1768b0] hover:text-white transition-all"
+                      >
+                        Shop
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
+          <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
         </div>
-        <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
       </div>
     </div>
   )
