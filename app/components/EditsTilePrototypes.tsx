@@ -8,7 +8,7 @@ import type { CollectionPreview } from '@/lib/look-session'
 const PEEK_PX = 20
 const GAP_PX  = 8
 
-function useSwipe(count: number) {
+function useSwipe(count: number, peekPx = PEEK_PX, gapPx = GAP_PX) {
   const [activeIdx, setActiveIdx] = useState(0)
   const [dragging, setDragging]   = useState(false)
   const [dragDelta, setDragDelta] = useState(0)
@@ -21,11 +21,11 @@ function useSwipe(count: number) {
     const el = trackRef.current
     if (!el) return
     const ro = new ResizeObserver(entries => {
-      setCardWidth(entries[0].contentRect.width - GAP_PX - PEEK_PX)
+      setCardWidth(entries[0].contentRect.width - gapPx - peekPx)
     })
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
+  }, [gapPx, peekPx])
 
   function goTo(i: number) { setActiveIdx(Math.max(0, Math.min(count - 1, i))) }
 
@@ -57,7 +57,7 @@ function useSwipe(count: number) {
     touchStart.current = null; dirLocked.current = null
   }
 
-  const step   = cardWidth + GAP_PX
+  const step   = cardWidth + gapPx
   const offset = cardWidth > 0 ? -activeIdx * step + (dragging ? dragDelta : 0) : 0
 
   return { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging }
@@ -184,7 +184,7 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group">
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[220px] sm:min-h-0">
       <div
         ref={trackRef}
         className="relative grow"
@@ -253,14 +253,16 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
 // ── Proto C: Hero tile ────────────────────────────────────────────────────────
 
 export function ProtoC({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
-  const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
+  // peekPx=0, gapPx=0 — card fills full width, no next-card hint
+  const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length, 0, 0)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group">
+    // Desktop: transparent bg + no padding so the card sits directly in the grid slot.
+    // Mobile: grey container with min-h for self-contained row height.
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent overflow-hidden sm:overflow-visible flex flex-col group min-h-[240px] sm:min-h-0">
       <div
         ref={trackRef}
-        className="relative grow"
-        style={{ padding: '12px 0 12px 12px' }}
+        className="relative grow pt-3 pb-3 pl-3 sm:p-0"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -268,7 +270,6 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
         <div
           className="flex h-full"
           style={{
-            gap: `${GAP_PX}px`,
             transform: `translateX(${offset}px)`,
             transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
           }}
@@ -279,7 +280,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
               <div
                 key={i}
                 className="shrink-0 relative rounded-[12px] overflow-hidden"
-                style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
+                style={{ width: cardWidth > 0 ? `${cardWidth}px` : '100%' }}
               >
                 {hero?.imageUrl && (
                   <img src={hero.imageUrl} alt={col.name}
