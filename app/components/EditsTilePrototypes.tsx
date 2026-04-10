@@ -22,7 +22,7 @@ function SmartImage({ src, alt, className }: { src: string; alt: string; classNa
       style={style}
       onLoad={e => {
         const { naturalWidth: w, naturalHeight: h } = e.currentTarget
-        if (w / h >= 0.85) setStyle({ objectFit: 'contain', objectPosition: 'center' })
+        if (w / h > 1.0) setStyle({ objectFit: 'contain', objectPosition: 'center' })
       }}
     />
   )
