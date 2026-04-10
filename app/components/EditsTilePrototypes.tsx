@@ -87,7 +87,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
               >
                 <div className="px-4 pt-4 pb-3 shrink-0">
                   <p className="text-[10px] tracking-[1.4px] uppercase font-semibold text-[rgba(26,26,26,0.4)] mb-2">
-                    Curated edit
+                    The edit
                   </p>
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a] tracking-[-0.3px]">

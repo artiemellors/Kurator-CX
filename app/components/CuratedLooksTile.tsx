@@ -73,7 +73,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
       {/* Title */}
       <div className="px-5 shrink-0">
         <h2 className="font-bold text-[20px] leading-[1.35] text-black tracking-[0.07px]">
-          Curated looks
+          Style ideas
         </h2>
       </div>
 
