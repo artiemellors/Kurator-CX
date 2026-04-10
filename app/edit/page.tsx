@@ -41,10 +41,11 @@ function EditPageContent() {
   const [error, setError]                           = useState<string | null>(null)
   const [headerQuery, setHeaderQuery]               = useState(q)
 
-  const fetchedOutfitsRef    = useRef(new Set<number>())
-  const refineControllerRef  = useRef<AbortController | null>(null)
+  const fetchedOutfitsRef   = useRef(new Set<number>())
+  const productsCacheRef    = useRef<Record<number, CollectionProduct[]>>({})
+  const refineControllerRef = useRef<AbortController | null>(null)
 
-  // Load collections from session storage (outfits are collection-specific, fetched separately)
+  // Load collections from session storage
   useEffect(() => {
     const session = loadLookSession(q)
     if (session?.collections && session.collections.length > 0) {
@@ -52,82 +53,74 @@ function EditPageContent() {
       const resolved = Math.min(idx, session.collections.length - 1)
       setActiveIdx(resolved)
       setCurrentPivots(session.collections[resolved]?.pivots ?? [])
+      // Seed initial collection's product pool so first render is instant
+      const initialPool = session.collections[resolved]?.productPool
+      if (initialPool && initialPool.length > 0) {
+        productsCacheRef.current[resolved] = initialPool as CollectionProduct[]
+      }
     }
     setReady(true)
   }, [q, idx])
 
-  // Fetch products for the active collection on load / tab switch
+  // Unified loader: fetch products then outfits sequentially (no abort race)
   useEffect(() => {
     if (!ready || collections.length === 0) return
     const col = collections[activeIdx]
     if (!col) return
 
-    // Fast path — use cached product pool immediately
-    if (col.productPool && col.productPool.length > 0) {
-      setProducts(col.productPool)
-      setLoading(false)
-      return
+    let cancelled = false
+
+    async function loadCollectionData() {
+      let prods: CollectionProduct[]
+
+      if (productsCacheRef.current[activeIdx]) {
+        prods = productsCacheRef.current[activeIdx]
+        if (!cancelled) setProducts(prods)
+      } else {
+        if (!cancelled) { setProducts(null); setLoading(true); setError(null) }
+        try {
+          const res = await fetch('/api/edit-products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q, collection: col, category }),
+          })
+          const { products: raw, pivots: newPivots } = await res.json() as { products: CollectionProduct[]; pivots?: string[] }
+          prods = raw ?? []
+          productsCacheRef.current[activeIdx] = prods
+          if (!cancelled) {
+            setProducts(prods)
+            setLoading(false)
+            if (newPivots?.length) setCurrentPivots(newPivots)
+          }
+        } catch (err) {
+          if (!cancelled) { setError(String(err)); setLoading(false) }
+          return
+        }
+      }
+
+      if (cancelled || prods.length === 0) return
+      if (fetchedOutfitsRef.current.has(activeIdx)) return
+      fetchedOutfitsRef.current.add(activeIdx)
+
+      try {
+        const res = await fetch('/api/collection-outfits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: q,
+            collection: { name: col.name, description: col.description },
+            products: prods,
+            category,
+          }),
+        })
+        const { outfits: raw } = await res.json() as { outfits: Outfit[] }
+        if (!cancelled) setOutfitsByCollection(prev => ({ ...prev, [activeIdx]: raw ?? [] }))
+      } catch { /* outfit tile simply won't show */ }
     }
 
-    // Slow path — LLM builds the product feed
-    setProducts(null)
-    setLoading(true)
-    setError(null)
-
-    const controller = new AbortController()
-    fetch('/api/edit-products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q, collection: col, category }),
-      signal: controller.signal,
-    })
-      .then(r => r.json())
-      .then(({ products: raw }: { products: CollectionProduct[] }) => {
-        if (!controller.signal.aborted) {
-          setProducts(raw ?? [])
-          setLoading(false)
-        }
-      })
-      .catch(err => {
-        if (!controller.signal.aborted && (err as Error).name !== 'AbortError') {
-          setError(String(err))
-          setLoading(false)
-        }
-      })
-
-    return () => controller.abort()
+    loadCollectionData()
+    return () => { cancelled = true }
   }, [ready, activeIdx, collections, q, category])
-
-  // Fetch collection-specific outfit ideas once products are available
-  useEffect(() => {
-    if (!products || products.length === 0 || !activeCollection) return
-    if (fetchedOutfitsRef.current.has(activeIdx)) return
-
-    fetchedOutfitsRef.current.add(activeIdx)
-
-    const controller = new AbortController()
-    fetch('/api/collection-outfits', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: q,
-        collection: { name: activeCollection.name, description: activeCollection.description },
-        products,
-        category,
-      }),
-      signal: controller.signal,
-    })
-      .then(r => r.json())
-      .then(({ outfits: raw }: { outfits: Outfit[] }) => {
-        if (!controller.signal.aborted) {
-          setOutfitsByCollection(prev => ({ ...prev, [activeIdx]: raw ?? [] }))
-        }
-      })
-      .catch(() => { /* outfit tile simply won't show */ })
-
-    return () => controller.abort()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, activeIdx])
 
   function handleHeaderSearch(newQ: string) {
     if (!newQ.trim()) return
@@ -135,6 +128,8 @@ function EditPageContent() {
   }
 
   function handleTabSwitch(i: number) {
+    // Show skeleton immediately if this collection hasn't been fetched yet
+    if (!productsCacheRef.current[i]) setProducts(null)
     setActiveIdx(i)
     setCurrentPivots(collections[i]?.pivots ?? [])
     setRefineCount(0)
@@ -159,7 +154,9 @@ function EditPageContent() {
       .then(r => r.json())
       .then(({ products: raw, pivots: newPivots }: { products: CollectionProduct[]; pivots?: string[] }) => {
         if (controller.signal.aborted) return
-        setProducts(raw ?? [])
+        const prods = raw ?? []
+        productsCacheRef.current[activeIdx] = prods
+        setProducts(prods)
         if (newPivots?.length) setCurrentPivots(newPivots)
         setRefineCount(c => c + 1)
         setRefining(false)
