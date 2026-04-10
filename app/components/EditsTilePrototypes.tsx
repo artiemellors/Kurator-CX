@@ -59,7 +59,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[280px] sm:min-h-0">
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[280px] sm:min-h-0 border border-black/[0.07]">
       <div
         ref={trackRef}
         className="relative grow"
@@ -82,6 +82,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
               <div
                 key={i}
                 className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
+                           shadow-[0_2px_12px_rgba(0,0,0,0.07)]
                            shrink-0 flex flex-col"
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
               >

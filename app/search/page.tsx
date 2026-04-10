@@ -411,7 +411,7 @@ function SearchResults() {
           )}
           {showGrid && gridItems.map((item, i) => {
             if (item.type === 'tile') {
-              if (outfits) return <CuratedLooksTile key="tile" outfits={outfits} onExplore={handleExplore} />
+              if (outfits) return <CuratedLooksTile key="tile" outfits={outfits} onExplore={handleExplore} category={classifiedCategoryRef.current} />
               if (bundleLoading) return <SkeletonTile key="tile" statusText={statuses[statuses.length - 1]} />
               return null
             }

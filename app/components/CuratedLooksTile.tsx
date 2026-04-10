@@ -6,6 +6,7 @@ import type { Outfit } from './OutfitResults'
 interface Props {
   outfits: Outfit[]
   onExplore: (idx: number) => void
+  category?: string
 }
 
 // Irregular phase offsets per circle index — not regular multiples so motion feels non-uniform
@@ -13,7 +14,7 @@ const SCROLL_PHASES = [0, 1.9, 3.4, 5.1, 0.8, 2.7]
 // Slightly different amplitudes (px) so each circle bobs a different amount
 const SCROLL_AMPS   = [5, 7, 4, 6, 5, 7]
 
-export default function CuratedLooksTile({ outfits, onExplore }: Props) {
+export default function CuratedLooksTile({ outfits, onExplore, category }: Props) {
   const [activeIdx, setActiveIdx] = useState(0)
   const tabsRef   = useRef<HTMLDivElement>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
@@ -73,7 +74,7 @@ export default function CuratedLooksTile({ outfits, onExplore }: Props) {
       {/* Title */}
       <div className="px-5 shrink-0">
         <h2 className="font-bold text-[20px] leading-[1.35] text-black tracking-[0.07px]">
-          Style ideas
+          {category === 'outfits' ? 'Outfit ideas' : 'Style ideas'}
         </h2>
       </div>
 
