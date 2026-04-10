@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useEffect } from 'react'
+import React, { Suspense, useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { loadLookSession, type CollectionPreview } from '@/lib/look-session'
@@ -211,9 +211,12 @@ function EditPageContent() {
             <p className="text-[15px] text-[rgba(26,26,26,0.6)] leading-[1.6] max-w-xl mb-5">
               {activeCollection.description}
             </p>
-            {/* Pivot chips — click to refine */}
+            {/* Refine chips */}
             {activeCollection.pivots.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[rgba(26,26,26,0.35)] mr-1">
+                  Refine
+                </span>
                 {activeCollection.pivots.map((pivot, i) => {
                   const isActive = activePivotSet.has(pivot)
                   return (
@@ -224,7 +227,7 @@ function EditPageContent() {
                                   transition-all duration-150 active:scale-95
                         ${isActive
                           ? 'border-[#1768b0] text-[#1768b0] bg-[rgba(23,104,176,0.06)]'
-                          : 'border-black/[0.12] text-[rgba(26,26,26,0.4)] bg-white hover:border-black/30 hover:text-[rgba(26,26,26,0.6)]'
+                          : 'border-black/[0.12] text-[rgba(26,26,26,0.5)] bg-white hover:border-black/30 hover:text-[rgba(26,26,26,0.7)]'
                         }`}
                     >
                       {isActive && (
@@ -234,12 +237,11 @@ function EditPageContent() {
                     </button>
                   )
                 })}
-                {/* Reset link — only shown when overriding */}
                 {overridePivots !== null && (
                   <button
                     onClick={() => setOverridePivots(null)}
-                    className="px-3 py-1.5 rounded-full text-[11px] text-[rgba(26,26,26,0.35)]
-                               hover:text-[rgba(26,26,26,0.6)] transition-colors underline underline-offset-2"
+                    className="text-[11px] text-[rgba(26,26,26,0.35)] hover:text-[rgba(26,26,26,0.6)]
+                               transition-colors underline underline-offset-2 ml-1"
                   >
                     Reset
                   </button>
@@ -269,13 +271,15 @@ function EditPageContent() {
           </div>
         )}
 
-        {/* Product grid */}
+        {/* Refining banner */}
         {loading && overridePivots !== null && (
           <p className="text-[12px] text-[rgba(26,26,26,0.4)] mb-4 flex items-center gap-2">
             <i className="fa-solid fa-wand-magic-sparkles animate-pulse" />
             Refining…
           </p>
         )}
+
+        {/* Product grid — outfit tile spliced in at position 12 */}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6">
           {loading && Array.from({ length: 10 }).map((_, i) => (
             <SkeletonProductCard key={i} />
@@ -286,20 +290,40 @@ function EditPageContent() {
               No products found for this collection
             </div>
           )}
-          {!loading && products && products.map((p, i) => (
-            <KmartProductCard key={`p-${i}`} p={p} animDelay={(i % 10) * 30} searchQuery={q} category={category} />
-          ))}
+          {!loading && products && (() => {
+            const TILE_AT = 12
+            const items: React.ReactNode[] = []
+            products.forEach((p, i) => {
+              if (i === TILE_AT && outfits.length > 0) {
+                items.push(
+                  <div key="outfit-tile" className="col-span-2 sm:col-span-4 xl:col-span-5">
+                    <CuratedLooksTile
+                      outfits={outfits}
+                      category={category}
+                      onExplore={(oi) => router.push(`/look?q=${encodeURIComponent(q)}&idx=${oi}&category=${category}`)}
+                    />
+                  </div>
+                )
+              }
+              items.push(
+                <KmartProductCard key={`p-${i}`} p={p} animDelay={(i % 10) * 30} searchQuery={q} category={category} />
+              )
+            })
+            // Fewer than TILE_AT products — append tile at end
+            if (products.length <= TILE_AT && outfits.length > 0) {
+              items.push(
+                <div key="outfit-tile" className="col-span-2 sm:col-span-4 xl:col-span-5">
+                  <CuratedLooksTile
+                    outfits={outfits}
+                    category={category}
+                    onExplore={(oi) => router.push(`/look?q=${encodeURIComponent(q)}&idx=${oi}&category=${category}`)}
+                  />
+                </div>
+              )
+            }
+            return items
+          })()}
         </div>
-
-        {/* Bundle tile — curated looks from the same search session */}
-        {outfits.length > 0 && (
-          <div className="mt-12">
-            <CuratedLooksTile
-              outfits={outfits}
-              onExplore={(idx) => router.push(`/look?q=${encodeURIComponent(q)}&idx=${idx}&category=${category}`)}
-            />
-          </div>
-        )}
 
       </main>
     </div>

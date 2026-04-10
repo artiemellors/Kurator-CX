@@ -65,7 +65,7 @@ For each collection's preview images (product_ids):
                     pivots: {
                       type: 'array',
                       items: { type: 'string' },
-                      description: '3–4 style direction chips (e.g. "warmer palette", "under $30", "more casual")',
+                      description: '3–4 short, concrete filter chips that are immediately obvious — use price points ("Under $20", "Under $50"), style modes ("Casual", "Smart casual", "Active"), or occasions ("Beach day", "Weekend", "Going out"). Avoid vague aesthetic terms like "warmer palette".',
                     },
                     product_ids: {
                       type: 'array',

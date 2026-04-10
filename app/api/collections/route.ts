@@ -20,10 +20,10 @@ Search strategy:
 - If a search returns 0 results, move on immediately — do not retry variants of the same item
 - Once you have 60+ products OR have made 8+ searches, call present_collections straight away
 
-Product ordering — apply "colour story + item adjacency":
-1. Group products by colour family (neutrals/whites first, then earth tones, then mid-tones, then accents/brights)
-2. Within each colour group, place items that would be used or displayed together adjacent to each other
-3. The result should read as visually cohesive rows and naturally shoppable ${itemGroupLabel.toLowerCase()} pairings`
+Product ordering — group by what goes together:
+1. Place items that would be worn or used together adjacent to each other (e.g. top → matching bottom → shoes → accessories)
+2. Then move to the next natural grouping within the collection's theme
+3. The result should read as naturally shoppable ${itemGroupLabel.toLowerCase()} pairings across the grid`
 }
 
 export async function POST(req: NextRequest) {
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
                     product_ids: {
                       type: 'array',
                       items: { type: 'string' },
-                      description: 'Product ids ordered by colour story + outfit adjacency: neutrals/whites first, then earth tones, then mid-tones, then accents. Within each colour group, items worn together appear adjacent.',
+                      description: 'Product ids ordered by outfit adjacency: items that go together appear adjacent (e.g. top → bottom → shoes). Then move to the next natural pairing.',
                     },
                   },
                   required: ['name', 'product_ids'],
