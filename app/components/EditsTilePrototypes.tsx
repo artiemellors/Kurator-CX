@@ -59,7 +59,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[280px] sm:min-h-0 border border-black/[0.07]">
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[280px] sm:min-h-0 border border-black/[0.04]">
       <div
         ref={trackRef}
         className="relative grow"
