@@ -29,47 +29,47 @@ function EditPageContent() {
   const idx      = Math.max(0, parseInt(searchParams.get('idx') ?? '0', 10))
   const category = searchParams.get('category') ?? 'outfits'
 
-  const [collections, setCollections]           = useState<CollectionPreview[]>([])
+  const [collections, setCollections]               = useState<CollectionPreview[]>([])
   const [outfitsByCollection, setOutfitsByCollection] = useState<Record<number, Outfit[]>>({})
-  const [activeIdx, setActiveIdx]               = useState(idx)
-  // null = no refinement applied (show productPool); string[] = user-selected refinements
-  const [overridePivots, setOverridePivots]     = useState<string[] | null>(null)
-  const [ready, setReady]                       = useState(false)
-  const [products, setProducts]                 = useState<CollectionProduct[] | null>(null)
-  const [loading, setLoading]                   = useState(false)
-  const [error, setError]                       = useState<string | null>(null)
-  const [headerQuery, setHeaderQuery]           = useState(q)
+  const [activeIdx, setActiveIdx]                   = useState(idx)
+  const [currentPivots, setCurrentPivots]           = useState<string[]>([])
+  const [refining, setRefining]                     = useState(false)
+  const [refineCount, setRefineCount]               = useState(0)
+  const [ready, setReady]                           = useState(false)
+  const [products, setProducts]                     = useState<CollectionProduct[] | null>(null)
+  const [loading, setLoading]                       = useState(false)
+  const [error, setError]                           = useState<string | null>(null)
+  const [headerQuery, setHeaderQuery]               = useState(q)
 
-  // Track which collection indices have already had outfits fetched
-  const fetchedOutfitsRef = useRef(new Set<number>())
+  const fetchedOutfitsRef    = useRef(new Set<number>())
+  const refineControllerRef  = useRef<AbortController | null>(null)
 
-  // Load collections from session storage (outfits are now collection-specific, fetched separately)
+  // Load collections from session storage (outfits are collection-specific, fetched separately)
   useEffect(() => {
     const session = loadLookSession(q)
     if (session?.collections && session.collections.length > 0) {
       setCollections(session.collections)
-      setActiveIdx(Math.min(idx, session.collections.length - 1))
+      const resolved = Math.min(idx, session.collections.length - 1)
+      setActiveIdx(resolved)
+      setCurrentPivots(session.collections[resolved]?.pivots ?? [])
     }
     setReady(true)
   }, [q, idx])
 
-  // Fetch products for the active collection (re-runs when pivots change)
+  // Fetch products for the active collection on load / tab switch
   useEffect(() => {
     if (!ready || collections.length === 0) return
     const col = collections[activeIdx]
     if (!col) return
 
-    // Fast path — use cached product pool when no refinement is active
-    if (!overridePivots && col.productPool && col.productPool.length > 0) {
+    // Fast path — use cached product pool immediately
+    if (col.productPool && col.productPool.length > 0) {
       setProducts(col.productPool)
       setLoading(false)
       return
     }
 
-    // Slow path — LLM re-selects products with the chosen style directions
-    const effectivePivots = overridePivots ?? col.pivots
-    const collectionWithPivots = { ...col, pivots: effectivePivots }
-
+    // Slow path — LLM builds the product feed
     setProducts(null)
     setLoading(true)
     setError(null)
@@ -78,7 +78,7 @@ function EditPageContent() {
     fetch('/api/edit-products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q, collection: collectionWithPivots, category }),
+      body: JSON.stringify({ query: q, collection: col, category }),
       signal: controller.signal,
     })
       .then(r => r.json())
@@ -96,7 +96,7 @@ function EditPageContent() {
       })
 
     return () => controller.abort()
-  }, [ready, activeIdx, overridePivots, collections, q, category])
+  }, [ready, activeIdx, collections, q, category])
 
   // Fetch collection-specific outfit ideas once products are available
   useEffect(() => {
@@ -136,22 +136,44 @@ function EditPageContent() {
 
   function handleTabSwitch(i: number) {
     setActiveIdx(i)
-    setOverridePivots(null)
+    setCurrentPivots(collections[i]?.pivots ?? [])
+    setRefineCount(0)
   }
 
-  function handlePivotToggle(pivot: string) {
-    // Chips start inactive; clicking adds to active set, clicking again removes
-    const current = overridePivots ?? []
-    const next = current.includes(pivot)
-      ? current.filter(p => p !== pivot)
-      : [...current, pivot]
-    setOverridePivots(next.length === 0 ? null : next)
+  function handlePivotClick(pivot: string) {
+    if (!activeCollection || refining) return
+
+    refineControllerRef.current?.abort()
+    const controller = new AbortController()
+    refineControllerRef.current = controller
+
+    setRefining(true)
+    setProducts(null)
+
+    fetch('/api/edit-products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q, collection: { ...activeCollection, pivots: [pivot] }, category }),
+      signal: controller.signal,
+    })
+      .then(r => r.json())
+      .then(({ products: raw, pivots: newPivots }: { products: CollectionProduct[]; pivots?: string[] }) => {
+        if (controller.signal.aborted) return
+        setProducts(raw ?? [])
+        if (newPivots?.length) setCurrentPivots(newPivots)
+        setRefineCount(c => c + 1)
+        setRefining(false)
+      })
+      .catch(err => {
+        if (!controller.signal.aborted && (err as Error).name !== 'AbortError') {
+          setError(String(err))
+          setRefining(false)
+        }
+      })
   }
 
   const activeCollection = collections[activeIdx]
-  // Only pivots the user has explicitly activated are "on"
-  const activePivotSet = new Set(overridePivots ?? [])
-  const activeOutfits = outfitsByCollection[activeIdx] ?? []
+  const activeOutfits    = outfitsByCollection[activeIdx] ?? []
 
   return (
     <div className="min-h-screen bg-[--bg]">
@@ -233,47 +255,29 @@ function EditPageContent() {
             <h1 className="font-bold text-[28px] sm:text-[36px] leading-[1.2] text-black tracking-[-0.3px] mb-3">
               {activeCollection.name}
             </h1>
-            <p className="text-[15px] text-[rgba(26,26,26,0.6)] leading-[1.6] max-w-xl mb-5">
+            <p className="text-[15px] text-[rgba(26,26,26,0.6)] leading-[1.6] max-w-xl">
               {activeCollection.description}
             </p>
-            {/* Refine chips — click to activate a style direction */}
-            {activeCollection.pivots.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[rgba(26,26,26,0.35)]">
-                    Refine
-                  </span>
-                  {overridePivots !== null && (
-                    <button
-                      onClick={() => setOverridePivots(null)}
-                      className="text-[11px] text-[rgba(26,26,26,0.35)] hover:text-[rgba(26,26,26,0.6)]
-                                 transition-colors underline underline-offset-2"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+            {/* Refinement chips — single-click, AI generates a fresh set after each */}
+            {!refining && currentPivots.length > 0 && (
+              <div
+                key={`chips-${refineCount}`}
+                className="border-t border-black/[0.06] pt-5 mt-5"
+                style={{ animation: 'fadeUp 0.5s 0.1s ease both' }}
+              >
                 <div className="flex flex-wrap gap-2">
-                  {activeCollection.pivots.map((pivot, i) => {
-                    const isActive = activePivotSet.has(pivot)
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => handlePivotToggle(pivot)}
-                        className={`px-3 py-1.5 rounded-full border text-[12px] font-medium
-                                    transition-all duration-150 active:scale-95
-                          ${isActive
-                            ? 'border-[#1768b0] text-[#1768b0] bg-[rgba(23,104,176,0.06)]'
-                            : 'border-black/[0.12] text-[rgba(26,26,26,0.5)] bg-white hover:border-black/30 hover:text-[rgba(26,26,26,0.7)]'
-                          }`}
-                      >
-                        {isActive && (
-                          <i className="fa-solid fa-check text-[9px] mr-1.5 align-middle" />
-                        )}
-                        {pivot}
-                      </button>
-                    )
-                  })}
+                  {currentPivots.map((pivot, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handlePivotClick(pivot)}
+                      className="px-4 py-2 rounded-full border border-black/[0.12] bg-white
+                                 text-[13px] text-[rgba(26,26,26,0.65)]
+                                 hover:border-[#1768b0] hover:text-[#1768b0]
+                                 transition-colors duration-150 whitespace-nowrap"
+                    >
+                      {pivot}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -301,7 +305,7 @@ function EditPageContent() {
         )}
 
         {/* Refining banner */}
-        {loading && overridePivots !== null && (
+        {refining && (
           <p className="text-[12px] text-[rgba(26,26,26,0.4)] mb-4 flex items-center gap-2">
             <i className="fa-solid fa-wand-magic-sparkles animate-pulse" />
             Refining…

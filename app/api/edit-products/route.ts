@@ -89,6 +89,11 @@ User search: "${query}"`
                 items: { type: 'string' },
                 description: 'Ordered list of product IDs from the search results.',
               },
+              next_pivots: {
+                type: 'array',
+                items: { type: 'string' },
+                description: '3 short follow-up refinement suggestions for the user to try next, e.g. "Under $30", "More colour", "Dressy options". Keep them specific and different from the current style direction.',
+              },
             },
             required: ['product_ids'],
           },
@@ -128,7 +133,7 @@ User search: "${query}"`
       return Response.json({ products: fallback })
     }
 
-    const { product_ids } = result.args as { product_ids: string[] }
+    const { product_ids, next_pivots } = result.args as { product_ids: string[]; next_pivots?: string[] }
     const products = (product_ids ?? [])
       .map(id => productMap.get(id))
       .filter((p): p is Product => p !== undefined && !!p.imageUrl)
@@ -139,8 +144,9 @@ User search: "${query}"`
       if (!included.has(p.name) && p.imageUrl) products.push(p as Product)
     }
 
-    console.log(`[EditProducts] Done — ${products.length} products for "${collection.name}"`)
-    return Response.json({ products })
+    const pivots = Array.isArray(next_pivots) ? next_pivots.filter(p => typeof p === 'string').slice(0, 4) : []
+    console.log(`[EditProducts] Done — ${products.length} products, ${pivots.length} next pivots for "${collection.name}"`)
+    return Response.json({ products, pivots })
 
   } catch (err) {
     console.error('[EditProducts] Route error:', err)
