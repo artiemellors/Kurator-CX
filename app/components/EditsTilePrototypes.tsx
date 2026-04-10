@@ -53,15 +53,6 @@ function NavArrows({ activeIdx, total, goTo }: { activeIdx: number; total: numbe
   )
 }
 
-function ProtoLabel({ letter }: { letter: string }) {
-  return (
-    <span className="absolute top-2 left-2 z-10 text-[9px] font-mono font-bold text-amber-600
-                     bg-amber-50/90 border border-amber-200 rounded px-1.5 py-0.5 leading-none">
-      {letter}
-    </span>
-  )
-}
-
 // ── Proto A: Editorial / text-forward ─────────────────────────────────────────
 
 export function ProtoA({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
@@ -116,77 +107,6 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                 <div className="grow min-h-0 flex gap-2 px-4 pb-4">
                   {images.map((p, j) => (
                     <div key={j} className="relative flex-1 aspect-[4/5] rounded-[8px] overflow-hidden bg-[#F4F5F6]">
-                      {j === 0 && <ProtoLabel letter="A" />}
-                      {p.imageUrl && (
-                        <SmartImage src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <NavArrows activeIdx={activeIdx} total={collections.length} goTo={goTo} />
-      </div>
-    </div>
-  )
-}
-
-// ── Proto B: Product shelf ────────────────────────────────────────────────────
-
-export function ProtoB({ collections, onExplore }: { collections: CollectionPreview[]; onExplore: (idx: number) => void }) {
-  const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
-
-  return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[220px] sm:min-h-0">
-      <div
-        ref={trackRef}
-        className="relative grow"
-        style={{ padding: '12px 0 12px 12px' }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
-        <div
-          className="flex h-full"
-          style={{
-            gap: `${GAP_PX}px`,
-            transform: `translateX(${offset}px)`,
-            transition: dragging ? 'none' : 'transform 380ms cubic-bezier(0.25, 1, 0.5, 1)',
-          }}
-        >
-          {collections.map((col, i) => {
-            const images = col.products.filter(p => p.imageUrl).slice(0, 2)
-            return (
-              <div
-                key={i}
-                className="bg-white rounded-[12px] border-[1.5px] border-black/[0.06]
-                           shrink-0 flex flex-col p-4 gap-3"
-                style={{ width: cardWidth > 0 ? `${cardWidth}px` : `calc(100% - ${PEEK_PX}px)` }}
-              >
-                <div className="shrink-0">
-                  <p className="text-[10px] tracking-[1.2px] uppercase text-[rgba(26,26,26,0.35)] mb-1">
-                    Shop the edit
-                  </p>
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-bold text-[20px] leading-[1.25] text-[#1a1a1a]">{col.name}</h3>
-                    <button
-                      onClick={() => onExplore(i)}
-                      className="shrink-0 text-[11px] font-semibold text-[#1768b0]
-                                 border border-[#1768b0] rounded-full px-3 py-1.5 whitespace-nowrap
-                                 hover:bg-[#1768b0] hover:text-white transition-all"
-                    >
-                      See all
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grow min-h-0 flex gap-2">
-                  {images.map((p, j) => (
-                    <div key={j} className="relative flex-1 aspect-[4/5] rounded-[8px] overflow-hidden bg-[#F4F5F6]">
-                      {j === 0 && <ProtoLabel letter="B" />}
                       {p.imageUrl && (
                         <SmartImage src={p.imageUrl} alt={p.name}
                           className="absolute inset-0 w-full h-full" />
@@ -238,7 +158,6 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
                   <SmartImage src={hero.imageUrl} alt={col.name}
                     className="absolute inset-0 w-full h-full" />
                 )}
-                <ProtoLabel letter="C" />
                 <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute inset-0 p-4 flex flex-col justify-end">
                   <div className="flex items-end justify-between gap-3">

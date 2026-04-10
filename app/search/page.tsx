@@ -4,23 +4,23 @@ import { Suspense, useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import CuratedLooksTile from '../components/CuratedLooksTile'
-import CuratedEditsTile from '../components/CuratedEditsTile'
-import { ProtoA, ProtoB, ProtoC } from '../components/EditsTilePrototypes'
+import { ProtoA, ProtoC } from '../components/EditsTilePrototypes'
 import { type Outfit } from '../components/OutfitResults'
 import { KmartProductCard, type CollectionProduct } from '../components/ProductCollections'
 import { saveLookSession, loadLookSession, type CollectionPreview } from '@/lib/look-session'
 import { detectCategory } from '@/lib/detect-category'
 
 
-// Where the CuratedEditsTile (collections) is inserted — comes first
-const EDITS_TILE_INSERT_POSITION = 4
-// Where the CuratedLooksTile (bundle) is inserted — comes second
-const TILE_INSERT_POSITION = 14
+// Where tiles are inserted into the product stream
+const PROTO_A_POSITION = 4   // after 4 products
+const PROTO_C_POSITION = 9   // after 4 more products (index in array post-ProtoA)
+const TILE_INSERT_POSITION = 16  // looks tile after ProtoA + ProtoC + 6 more products
 
 type GridItem =
   | { type: 'product'; data: CollectionProduct }
   | { type: 'tile' }
-  | { type: 'edits-tile' }
+  | { type: 'proto-a' }
+  | { type: 'proto-c' }
 
 function SkeletonCard() {
   return (
@@ -323,17 +323,22 @@ function SearchResults() {
 
     const productItems = products.map(p => ({ type: 'product' as const, data: p }))
 
-    // Insert edits tile (collections) first
-    const editsPos = Math.min(EDITS_TILE_INSERT_POSITION, productItems.length)
-    const withEditsTile: GridItem[] = showEditSlot
-      ? [...productItems.slice(0, editsPos), { type: 'edits-tile' as const }, ...productItems.slice(editsPos)]
+    // Insert ProtoA after 4 products
+    const withA: GridItem[] = showEditSlot
+      ? [...productItems.slice(0, PROTO_A_POSITION), { type: 'proto-a' as const }, ...productItems.slice(PROTO_A_POSITION)]
       : [...productItems]
 
-    // Then insert looks tile (bundle) after more products
-    const tilePos = Math.min(TILE_INSERT_POSITION, withEditsTile.length)
+    // Insert ProtoC 4 products after ProtoA
+    const protoCIdx = Math.min(PROTO_C_POSITION, withA.length)
+    const withC: GridItem[] = showEditSlot
+      ? [...withA.slice(0, protoCIdx), { type: 'proto-c' as const }, ...withA.slice(protoCIdx)]
+      : withA
+
+    // Insert looks tile after ProtoA + ProtoC + more products
+    const tilePos = Math.min(TILE_INSERT_POSITION, withC.length)
     return showTileSlot
-      ? [...withEditsTile.slice(0, tilePos), { type: 'tile' as const }, ...withEditsTile.slice(tilePos)]
-      : withEditsTile
+      ? [...withC.slice(0, tilePos), { type: 'tile' as const }, ...withC.slice(tilePos)]
+      : withC
   })()
 
   const showSkeletons = productsLoading
@@ -394,7 +399,7 @@ function SearchResults() {
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6 grid-flow-dense">
           {showSkeletons && (
             <>
-              {Array.from({ length: EDITS_TILE_INSERT_POSITION }).map((_, i) => <SkeletonCard key={`pre-${i}`} />)}
+              {Array.from({ length: PROTO_A_POSITION }).map((_, i) => <SkeletonCard key={`pre-${i}`} />)}
               <SkeletonTile />
               {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={`post-${i}`} />)}
             </>
@@ -410,9 +415,14 @@ function SearchResults() {
               if (bundleLoading) return <SkeletonTile key="tile" statusText={statuses[statuses.length - 1]} />
               return null
             }
-            if (item.type === 'edits-tile') {
-              if (collections.length > 0) return <CuratedEditsTile key="edits-tile" collections={collections} onExplore={handleExploreEdit} />
-              if (bundleLoading || collectionsLoading) return <SkeletonEditsTile key="edits-tile" />
+            if (item.type === 'proto-a') {
+              if (collections.length > 0) return <ProtoA key="proto-a" collections={collections} onExplore={handleExploreEdit} />
+              if (bundleLoading || collectionsLoading) return <SkeletonEditsTile key="proto-a" />
+              return null
+            }
+            if (item.type === 'proto-c') {
+              if (collections.length > 0) return <ProtoC key="proto-c" collections={collections} onExplore={handleExploreEdit} />
+              if (bundleLoading || collectionsLoading) return <SkeletonEditsTile key="proto-c" />
               return null
             }
             return (
@@ -427,56 +437,6 @@ function SearchResults() {
           })}
         </div>
 
-        {/* ── PROTOTYPE COMPARISON ── remove before shipping ───────────────── */}
-        {collections.length > 0 && products !== null && products.length > 0 && (() => {
-          // Cycle products to fill 22 slots so the grid feels populated regardless of result count
-          const pp = Array.from({ length: 16 }, (_, i) => products![i % products!.length])
-          const card = (p: CollectionProduct, idx: number) => (
-            <KmartProductCard
-              key={`ppp-${idx}`}
-              p={p}
-              animDelay={0}
-              searchQuery={q}
-              category={classifiedCategoryRef.current}
-            />
-          )
-          return (
-            <div className="mt-20 border-t-2 border-dashed border-amber-300 pt-8">
-              <p className="text-[11px] font-mono font-bold text-amber-500 uppercase tracking-widest mb-1">
-                Prototype comparison
-              </p>
-              <p className="text-[12px] text-[rgba(26,26,26,0.35)] mb-8">
-                Live data — remove before shipping
-              </p>
-
-              {/*
-                Tile positions on 4-col sm desktop (products are col-span-1, tiles col-span-2):
-                Row 0: [P P  A  A]   — A at right
-                Row 1: [P P P P]
-                Row 2: [P P  B  B]   — B at right
-                Row 3: [P P P P]
-                Row 4: [P P  C  C]   — C at right
-                Row 5: [P P P P]
-              */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6">
-                {/* 2 prods → A */}
-                {pp.slice(0, 2).map((p, i) => card(p, i))}
-                <ProtoA collections={collections} onExplore={handleExploreEdit} />
-
-                {/* 6 prods → B */}
-                {pp.slice(2, 8).map((p, i) => card(p, i + 2))}
-                <ProtoB collections={collections} onExplore={handleExploreEdit} />
-
-                {/* 4 prods → C */}
-                {pp.slice(8, 12).map((p, i) => card(p, i + 8))}
-                <ProtoC collections={collections} onExplore={handleExploreEdit} />
-
-                {/* 4 trailing prods */}
-                {pp.slice(12, 16).map((p, i) => card(p, i + 12))}
-              </div>
-            </div>
-          )
-        })()}
 
       </main>
     </div>
