@@ -1,7 +1,32 @@
 'use client'
 
+import { useState, type CSSProperties } from 'react'
 import type { CollectionPreview } from '@/lib/look-session'
 import { useSwipe, GAP_PX, PEEK_PX } from '@/hooks/useSwipe'
+
+// Request image at natural aspect ratio so onLoad can detect portrait vs. square/landscape
+function fitUrl(url: string) {
+  return url.replace(/\?io=transform:[^&]+/, '?io=transform:fit,width:580,height:1000')
+}
+
+// Portrait → cover+top (fills frame, shows face/garment)
+// Square / landscape → contain (shows full product on grey bg)
+function SmartImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [style, setStyle] = useState<CSSProperties>({ objectFit: 'cover', objectPosition: 'top' })
+
+  return (
+    <img
+      src={fitUrl(src)}
+      alt={alt}
+      className={className}
+      style={style}
+      onLoad={e => {
+        const { naturalWidth: w, naturalHeight: h } = e.currentTarget
+        if (w / h >= 0.85) setStyle({ objectFit: 'contain', objectPosition: 'center' })
+      }}
+    />
+  )
+}
 
 function NavArrows({ activeIdx, total, goTo }: { activeIdx: number; total: number; goTo: (i: number) => void }) {
   return (
@@ -90,11 +115,11 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
 
                 <div className="grow min-h-0 flex gap-2 px-4 pb-4">
                   {images.map((p, j) => (
-                    <div key={j} className="relative flex-1 aspect-[4/5] sm:aspect-auto rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                    <div key={j} className="relative flex-1 aspect-[4/5] rounded-[8px] overflow-hidden bg-[#F4F5F6]">
                       {j === 0 && <ProtoLabel letter="A" />}
                       {p.imageUrl && (
-                        <img src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full object-cover" />
+                        <SmartImage src={p.imageUrl} alt={p.name}
+                          className="absolute inset-0 w-full h-full" />
                       )}
                     </div>
                   ))}
@@ -160,11 +185,11 @@ export function ProtoB({ collections, onExplore }: { collections: CollectionPrev
 
                 <div className="grow min-h-0 flex gap-2">
                   {images.map((p, j) => (
-                    <div key={j} className="relative flex-1 aspect-[4/5] sm:aspect-auto rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                    <div key={j} className="relative flex-1 aspect-[4/5] rounded-[8px] overflow-hidden bg-[#F4F5F6]">
                       {j === 0 && <ProtoLabel letter="B" />}
                       {p.imageUrl && (
-                        <img src={p.imageUrl} alt={p.name}
-                          className="absolute inset-0 w-full h-full object-cover" />
+                        <SmartImage src={p.imageUrl} alt={p.name}
+                          className="absolute inset-0 w-full h-full" />
                       )}
                     </div>
                   ))}
@@ -210,8 +235,8 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : '100%' }}
               >
                 {hero?.imageUrl && (
-                  <img src={hero.imageUrl} alt={col.name}
-                    className="absolute inset-0 w-full h-full object-cover object-top" />
+                  <SmartImage src={hero.imageUrl} alt={col.name}
+                    className="absolute inset-0 w-full h-full" />
                 )}
                 <ProtoLabel letter="C" />
                 <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
