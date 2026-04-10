@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useEffect, type ReactNode } from 'react'
+import { Suspense, useState, useEffect, useRef, type ReactNode } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { loadLookSession, type CollectionPreview } from '@/lib/look-session'
@@ -21,7 +21,6 @@ function SkeletonProductCard() {
   )
 }
 
-
 function EditPageContent() {
   const searchParams = useSearchParams()
   const router       = useRouter()
@@ -30,26 +29,26 @@ function EditPageContent() {
   const idx      = Math.max(0, parseInt(searchParams.get('idx') ?? '0', 10))
   const category = searchParams.get('category') ?? 'outfits'
 
-  const [collections, setCollections] = useState<CollectionPreview[]>([])
-  const [outfits, setOutfits]         = useState<Outfit[]>([])
-  const [activeIdx, setActiveIdx]     = useState(idx)
-  // null = use collection's own pivots; string[] = user-overridden subset
-  const [overridePivots, setOverridePivots] = useState<string[] | null>(null)
-  const [ready, setReady]             = useState(false)
-  const [products, setProducts]       = useState<CollectionProduct[] | null>(null)
-  const [loading, setLoading]         = useState(false)
-  const [error, setError]             = useState<string | null>(null)
-  const [headerQuery, setHeaderQuery] = useState(q)
+  const [collections, setCollections]           = useState<CollectionPreview[]>([])
+  const [outfitsByCollection, setOutfitsByCollection] = useState<Record<number, Outfit[]>>({})
+  const [activeIdx, setActiveIdx]               = useState(idx)
+  // null = no refinement applied (show productPool); string[] = user-selected refinements
+  const [overridePivots, setOverridePivots]     = useState<string[] | null>(null)
+  const [ready, setReady]                       = useState(false)
+  const [products, setProducts]                 = useState<CollectionProduct[] | null>(null)
+  const [loading, setLoading]                   = useState(false)
+  const [error, setError]                       = useState<string | null>(null)
+  const [headerQuery, setHeaderQuery]           = useState(q)
 
-  // Load collections + outfits from session storage
+  // Track which collection indices have already had outfits fetched
+  const fetchedOutfitsRef = useRef(new Set<number>())
+
+  // Load collections from session storage (outfits are now collection-specific, fetched separately)
   useEffect(() => {
     const session = loadLookSession(q)
     if (session?.collections && session.collections.length > 0) {
       setCollections(session.collections)
       setActiveIdx(Math.min(idx, session.collections.length - 1))
-    }
-    if (session?.outfits && session.outfits.length > 0) {
-      setOutfits(session.outfits)
     }
     setReady(true)
   }, [q, idx])
@@ -60,15 +59,14 @@ function EditPageContent() {
     const col = collections[activeIdx]
     if (!col) return
 
-    // If the session already has a product pool from the preview fetch and the
-    // user hasn't overridden pivots, show it immediately — no LLM call needed.
+    // Fast path — use cached product pool when no refinement is active
     if (!overridePivots && col.productPool && col.productPool.length > 0) {
       setProducts(col.productPool)
       setLoading(false)
       return
     }
 
-    // Effective pivots: user override or collection defaults
+    // Slow path — LLM re-selects products with the chosen style directions
     const effectivePivots = overridePivots ?? col.pivots
     const collectionWithPivots = { ...col, pivots: effectivePivots }
 
@@ -100,33 +98,60 @@ function EditPageContent() {
     return () => controller.abort()
   }, [ready, activeIdx, overridePivots, collections, q, category])
 
+  // Fetch collection-specific outfit ideas once products are available
+  useEffect(() => {
+    if (!products || products.length === 0 || !activeCollection) return
+    if (fetchedOutfitsRef.current.has(activeIdx)) return
+
+    fetchedOutfitsRef.current.add(activeIdx)
+
+    const controller = new AbortController()
+    fetch('/api/collection-outfits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: q,
+        collection: { name: activeCollection.name, description: activeCollection.description },
+        products,
+        category,
+      }),
+      signal: controller.signal,
+    })
+      .then(r => r.json())
+      .then(({ outfits: raw }: { outfits: Outfit[] }) => {
+        if (!controller.signal.aborted) {
+          setOutfitsByCollection(prev => ({ ...prev, [activeIdx]: raw ?? [] }))
+        }
+      })
+      .catch(() => { /* outfit tile simply won't show */ })
+
+    return () => controller.abort()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, activeIdx])
+
   function handleHeaderSearch(newQ: string) {
     if (!newQ.trim()) return
     router.push(`/search?q=${encodeURIComponent(newQ.trim())}`)
   }
 
   function handleTabSwitch(i: number) {
-    // Batch both updates — single render, single fetch
     setActiveIdx(i)
     setOverridePivots(null)
   }
 
   function handlePivotToggle(pivot: string) {
-    const col = collections[activeIdx]
-    if (!col) return
-    // Base list to toggle against: override if set, otherwise all collection pivots
-    const current = overridePivots ?? col.pivots
+    // Chips start inactive; clicking adds to active set, clicking again removes
+    const current = overridePivots ?? []
     const next = current.includes(pivot)
       ? current.filter(p => p !== pivot)
       : [...current, pivot]
-    // If back to full set → clear override (treated as default)
-    const isDefault = col.pivots.every(p => next.includes(p)) && next.length === col.pivots.length
-    setOverridePivots(isDefault ? null : next)
+    setOverridePivots(next.length === 0 ? null : next)
   }
 
   const activeCollection = collections[activeIdx]
-  // Derive which pivots are currently "on" for rendering chip state
-  const activePivotSet = new Set(overridePivots ?? activeCollection?.pivots ?? [])
+  // Only pivots the user has explicitly activated are "on"
+  const activePivotSet = new Set(overridePivots ?? [])
+  const activeOutfits = outfitsByCollection[activeIdx] ?? []
 
   return (
     <div className="min-h-screen bg-[--bg]">
@@ -211,41 +236,45 @@ function EditPageContent() {
             <p className="text-[15px] text-[rgba(26,26,26,0.6)] leading-[1.6] max-w-xl mb-5">
               {activeCollection.description}
             </p>
-            {/* Refine chips */}
+            {/* Refine chips — click to activate a style direction */}
             {activeCollection.pivots.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[rgba(26,26,26,0.35)] mr-1">
-                  Refine
-                </span>
-                {activeCollection.pivots.map((pivot, i) => {
-                  const isActive = activePivotSet.has(pivot)
-                  return (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[rgba(26,26,26,0.35)]">
+                    Refine
+                  </span>
+                  {overridePivots !== null && (
                     <button
-                      key={i}
-                      onClick={() => handlePivotToggle(pivot)}
-                      className={`px-3 py-1.5 rounded-full border text-[12px] font-medium
-                                  transition-all duration-150 active:scale-95
-                        ${isActive
-                          ? 'border-[#1768b0] text-[#1768b0] bg-[rgba(23,104,176,0.06)]'
-                          : 'border-black/[0.12] text-[rgba(26,26,26,0.5)] bg-white hover:border-black/30 hover:text-[rgba(26,26,26,0.7)]'
-                        }`}
+                      onClick={() => setOverridePivots(null)}
+                      className="text-[11px] text-[rgba(26,26,26,0.35)] hover:text-[rgba(26,26,26,0.6)]
+                                 transition-colors underline underline-offset-2"
                     >
-                      {isActive && (
-                        <i className="fa-solid fa-check text-[9px] mr-1.5 align-middle" />
-                      )}
-                      {pivot}
+                      Clear
                     </button>
-                  )
-                })}
-                {overridePivots !== null && (
-                  <button
-                    onClick={() => setOverridePivots(null)}
-                    className="text-[11px] text-[rgba(26,26,26,0.35)] hover:text-[rgba(26,26,26,0.6)]
-                               transition-colors underline underline-offset-2 ml-1"
-                  >
-                    Reset
-                  </button>
-                )}
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {activeCollection.pivots.map((pivot, i) => {
+                    const isActive = activePivotSet.has(pivot)
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handlePivotToggle(pivot)}
+                        className={`px-3 py-1.5 rounded-full border text-[12px] font-medium
+                                    transition-all duration-150 active:scale-95
+                          ${isActive
+                            ? 'border-[#1768b0] text-[#1768b0] bg-[rgba(23,104,176,0.06)]'
+                            : 'border-black/[0.12] text-[rgba(26,26,26,0.5)] bg-white hover:border-black/30 hover:text-[rgba(26,26,26,0.7)]'
+                          }`}
+                      >
+                        {isActive && (
+                          <i className="fa-solid fa-check text-[9px] mr-1.5 align-middle" />
+                        )}
+                        {pivot}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -292,10 +321,10 @@ function EditPageContent() {
           )}
           {!loading && products && (() => {
             const TILE_AT = 12
-            const tile = outfits.length > 0 ? (
+            const tile = activeOutfits.length > 0 ? (
               <CuratedLooksTile
                 key="outfit-tile"
-                outfits={outfits}
+                outfits={activeOutfits}
                 category={category}
                 onExplore={(oi) => router.push(`/look?q=${encodeURIComponent(q)}&idx=${oi}&category=${category}`)}
               />

@@ -59,7 +59,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging } = useSwipe(collections.length)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[280px] sm:min-h-0 border border-black/[0.04]">
+    <div className="col-span-2 sm:col-span-4 xl:col-span-5 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:rounded-[16px] overflow-hidden flex flex-col group min-h-[280px] sm:min-h-0 border border-black/[0.04]">
       <div
         ref={trackRef}
         className="relative grow"
@@ -77,7 +77,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
           }}
         >
           {collections.map((col, i) => {
-            const images = col.products.filter(p => p.imageUrl).slice(0, 2)
+            const images = col.products.filter(p => p.imageUrl).slice(0, 3)
             return (
               <div
                 key={i}
@@ -107,7 +107,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
 
                 <div className="grow min-h-0 flex gap-2 px-4 pb-4">
                   {images.map((p, j) => (
-                    <div key={j} className="relative flex-1 aspect-[4/5] rounded-[8px] overflow-hidden bg-[#F4F5F6]">
+                    <div key={j} className={`relative flex-1 aspect-[4/5] rounded-[8px] overflow-hidden bg-[#F4F5F6]${j === 2 ? ' hidden sm:block' : ''}`}>
                       {p.imageUrl && (
                         <SmartImage src={p.imageUrl} alt={p.name}
                           className="absolute inset-0 w-full h-full" />
@@ -131,7 +131,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging, gapPx } = useSwipe(collections.length, 0, GAP_PX)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent flex flex-col group aspect-[8/5] sm:aspect-auto">
+    <div className="col-span-2 sm:col-span-4 xl:col-span-5 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent flex flex-col group aspect-[8/5] sm:aspect-[3/1]">
       <div
         ref={trackRef}
         className="relative grow p-3 pr-7 sm:p-0 overflow-hidden sm:rounded-[12px]"
