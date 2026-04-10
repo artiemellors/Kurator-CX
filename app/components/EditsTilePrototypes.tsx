@@ -155,10 +155,13 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
                 style={{ width: cardWidth > 0 ? `${cardWidth}px` : '100%' }}
               >
                 {hero?.imageUrl && (
-                  <SmartImage src={hero.imageUrl} alt={col.name}
-                    className="absolute inset-0 w-full h-full" />
+                  <img
+                    src={fitUrl(hero.imageUrl)}
+                    alt={col.name}
+                    className="absolute inset-0 w-full h-full object-cover object-top"
+                  />
                 )}
-                <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
                 <div className="absolute inset-0 p-4 flex flex-col justify-end">
                   <div className="flex items-end justify-between gap-3">
                     <h3 className="font-bold text-[18px] sm:text-[22px] leading-[1.2] text-white tracking-[-0.2px]">
