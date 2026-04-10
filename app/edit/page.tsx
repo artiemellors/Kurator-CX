@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense, useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, type ReactNode } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { loadLookSession, type CollectionPreview } from '@/lib/look-session'
@@ -292,35 +292,22 @@ function EditPageContent() {
           )}
           {!loading && products && (() => {
             const TILE_AT = 12
-            const items: React.ReactNode[] = []
+            const tile = outfits.length > 0 ? (
+              <CuratedLooksTile
+                key="outfit-tile"
+                outfits={outfits}
+                category={category}
+                onExplore={(oi) => router.push(`/look?q=${encodeURIComponent(q)}&idx=${oi}&category=${category}`)}
+              />
+            ) : null
+            const items: ReactNode[] = []
             products.forEach((p, i) => {
-              if (i === TILE_AT && outfits.length > 0) {
-                items.push(
-                  <div key="outfit-tile" className="col-span-2 sm:col-span-4 xl:col-span-5">
-                    <CuratedLooksTile
-                      outfits={outfits}
-                      category={category}
-                      onExplore={(oi) => router.push(`/look?q=${encodeURIComponent(q)}&idx=${oi}&category=${category}`)}
-                    />
-                  </div>
-                )
-              }
+              if (i === TILE_AT && tile) items.push(tile)
               items.push(
                 <KmartProductCard key={`p-${i}`} p={p} animDelay={(i % 10) * 30} searchQuery={q} category={category} />
               )
             })
-            // Fewer than TILE_AT products — append tile at end
-            if (products.length <= TILE_AT && outfits.length > 0) {
-              items.push(
-                <div key="outfit-tile" className="col-span-2 sm:col-span-4 xl:col-span-5">
-                  <CuratedLooksTile
-                    outfits={outfits}
-                    category={category}
-                    onExplore={(oi) => router.push(`/look?q=${encodeURIComponent(q)}&idx=${oi}&category=${category}`)}
-                  />
-                </div>
-              )
-            }
+            if (products.length <= TILE_AT && tile) items.push(tile)
             return items
           })()}
         </div>
