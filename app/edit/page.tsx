@@ -209,16 +209,23 @@ function EditPageContent() {
               </button>
             </div>
           </form>
-          <button
-            onClick={() => router.back()}
-            className="shrink-0 text-[13px] text-[rgba(26,26,26,0.5)] hover:text-[#1a1a1a]
-                       transition-colors flex items-center gap-1.5"
-          >
-            <i className="fa-solid fa-arrow-left text-[11px]" />
-            Back
-          </button>
         </div>
       </header>
+
+      {/* Back bar — full-width strip below the header, matching the look page */}
+      <div className="bg-white border-b border-black/[0.06]"
+           style={{ animation: 'fadeDown 0.45s ease both' }}>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-3">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-[rgba(26,26,26,0.45)]
+                       hover:text-[#1768B0] transition-colors"
+          >
+            <i className="fa-solid fa-chevron-left text-[11px]" />
+            <span className="text-[12px]">Back to results</span>
+          </button>
+        </div>
+      </div>
 
       <main className="max-w-[1600px] mx-auto px-4 sm:px-8 py-8 pb-16">
 
