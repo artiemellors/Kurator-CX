@@ -224,7 +224,7 @@ function EditPageContent() {
 
         {/* Collection tabs — sibling collections */}
         {collections.length > 1 && (
-          <div className="mb-6 border-b border-black/[0.08]">
+          <div className="mb-10 border-b border-black/[0.08]">
             <div className="flex overflow-x-auto scrollbar-hide">
               {collections.map((col, i) => (
                 <button
@@ -256,7 +256,7 @@ function EditPageContent() {
               {activeCollection.name}
             </h1>
             <p className="text-[15px] text-[rgba(26,26,26,0.6)] leading-[1.6] max-w-xl">
-              {activeCollection.description}
+              {activeCollection.description.match(/^.+?[.!?]/)?.[0] ?? activeCollection.description}
             </p>
             {/* Refinement chips — single-click, AI generates a fresh set after each */}
             {!refining && currentPivots.length > 0 && (

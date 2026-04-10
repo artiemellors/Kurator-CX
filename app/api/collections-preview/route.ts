@@ -60,7 +60,7 @@ For each collection's preview images (product_ids):
                     },
                     description: {
                       type: 'string',
-                      description: '2–3 sentences in a stylist\'s voice describing the mood, occasion, and aesthetic',
+                      description: 'One punchy sentence in a stylist\'s voice — lead with the mood or occasion, end on an emotion or aspiration. No more than 20 words.',
                     },
                     pivots: {
                       type: 'array',
