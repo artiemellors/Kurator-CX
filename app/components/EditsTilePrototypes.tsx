@@ -131,7 +131,7 @@ export function ProtoC({ collections, onExplore }: { collections: CollectionPrev
   const { trackRef, activeIdx, goTo, onTouchStart, onTouchMove, onTouchEnd, cardWidth, offset, dragging, gapPx } = useSwipe(collections.length, 0, GAP_PX)
 
   return (
-    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent flex flex-col group aspect-[8/5] sm:aspect-auto">
+    <div className="col-span-2 -mx-4 sm:mx-0 bg-[#F4F5F6] sm:bg-transparent flex flex-col group aspect-square sm:aspect-auto">
       <div
         ref={trackRef}
         className="relative grow p-3 pr-7 sm:p-0 overflow-hidden sm:rounded-[12px]"
