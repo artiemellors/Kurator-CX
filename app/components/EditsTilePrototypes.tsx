@@ -3,6 +3,7 @@
 import { useState, type CSSProperties } from 'react'
 import type { CollectionPreview } from '@/lib/look-session'
 import { useSwipe, GAP_PX, PEEK_PX } from '@/hooks/useSwipe'
+import ButtonUnique from './ButtonUnique'
 
 // Request image at natural aspect ratio so onLoad can detect portrait vs. square/landscape
 function fitUrl(url: string) {
@@ -94,14 +95,7 @@ export function ProtoA({ collections, onExplore }: { collections: CollectionPrev
                     <h3 className="font-bold text-[22px] sm:text-[26px] leading-[1.2] text-[#1a1a1a] tracking-[-0.3px]">
                       {col.name}
                     </h3>
-                    <button
-                      onClick={() => onExplore(i)}
-                      className="shrink-0 flex items-center gap-1 text-[12px] font-normal
-                                 text-[#1768b0] hover:underline underline-offset-2 transition-all"
-                    >
-                      Explore
-                      <i className="fa-solid fa-arrow-right text-[9px]" />
-                    </button>
+                    <ButtonUnique onClick={() => onExplore(i)} />
                   </div>
                 </div>
 
