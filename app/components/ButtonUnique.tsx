@@ -12,7 +12,11 @@ export default function ButtonUnique({ label = "Explore", onClick }: ButtonUniqu
       className="group content-stretch flex items-center overflow-clip relative rounded-[4px]"
     >
       <div className="flex gap-[4px] items-center py-[8px]">
-        <span className="leading-[20px] text-[#1a374a] text-[14px] whitespace-nowrap">
+        <span className="relative leading-[20px] text-[#1a374a] text-[14px] whitespace-nowrap
+                         after:absolute after:bottom-0 after:left-0 after:h-px after:w-full
+                         after:bg-[#1a374a] after:scale-x-0 after:origin-left
+                         after:transition-transform after:duration-200
+                         group-hover:after:scale-x-100">
           {label}
         </span>
         <div className="overflow-clip relative rounded-[2px] shrink-0 size-[16px]
